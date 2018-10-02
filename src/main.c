@@ -8,7 +8,13 @@
 #include "api/syscall.h"
 #include "api/print.h"
 #include "libusart.h"
+#ifdef CONFIG_APP_PIN_INPUT_USART
 #include "libconsole.h"
+#else
+#include "libspi.h"
+#include "libtouch.h"
+#include "libtft.h"
+#endif
 #include "libshell.h"
 #include "ipc_proto.h"
 #include "autoconf.h"
@@ -48,6 +54,18 @@ int _main(uint32_t task_id)
             ;
     }
     printf("Registered USART through libshell %d\n", ret);
+#else /* graphical touchscreen */
+    if (spi1_early_init()) {
+        printf("ERROR: registering SPI1 failed.\n");
+        while (1)
+            ;
+    }
+    if (tft_early_init()) {
+        printf("ERROR: registering TFT failed.\n");
+        while (1)
+            ;
+    }
+    printf("Registered SPI1 and TFT.\n");
 #endif
 
     ret = sys_init(INIT_GETTASKID, "smart", &id_smart);
@@ -101,6 +119,10 @@ int _main(uint32_t task_id)
     }
     console_log("[USART4] Pin initialized usart...\n");
     console_flush();
+#else
+    if (tft_init()) {
+        printf("error during TFT initialization!\n");
+    }
 #endif
 
 
@@ -128,8 +150,26 @@ int _main(uint32_t task_id)
     console_log("pin is %s\n", pin);
     printf("pin len is %x\n", pin_len);
     console_flush();
+#else
+    tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
+    tft_fill_rectangle_unlocked(0,240,0,320,255,0,0);
+    //tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
+    //tft_fill_rectangle_unlocked(0,240,0,320,0,0,255);
+    tft_setfg(200,200,200);
+    tft_setbg(5,0,5);
+    tft_set_cursor_pos(0,29);
+    tft_puts("  Please enter ");
+    tft_puts("  Please enter ");
+    tft_puts("  Please enter ");
+    tft_puts("  Please enter ");
+    tft_puts("  Please enter ");
+    tft_puts("  Please enter ");
+    tft_puts("  Please enter ");
 #endif
-
+    // FIXME...
+    while (1) {
+        sys_yield();
+    }
     ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
     ipc_sync_cmd.state = SYNC_DONE;
     ipc_sync_cmd.data_size = (uint8_t)pin_len;
