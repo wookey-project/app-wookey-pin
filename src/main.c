@@ -131,6 +131,8 @@ int _main(uint32_t task_id)
      * (when Smartcard is connected)
      *******************************************/
     uint32_t pin_len = 0;
+    /* FIXME: pin size 8 */
+    char test_pin[9] = { 0 };
 
     id = id_smart;
     size = 2;
@@ -146,7 +148,12 @@ int _main(uint32_t task_id)
 #ifdef CONFIG_APP_PIN_INPUT_USART
     console_log("Enter pin code please\n");
     console_flush();
-    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+    //FIXME test
+    //shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+    strncpy(test_pin, "12345678", 8);
+    pin = test_pin;
+    pin_len = 8;
+
     console_log("pin is %s\n", pin);
     printf("pin len is %x\n", pin_len);
     console_flush();
@@ -166,10 +173,6 @@ int _main(uint32_t task_id)
     tft_puts("  Please enter ");
     tft_puts("  Please enter ");
 #endif
-    // FIXME...
-    while (1) {
-        sys_yield();
-    }
     ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
     ipc_sync_cmd.state = SYNC_DONE;
     ipc_sync_cmd.data_size = (uint8_t)pin_len;

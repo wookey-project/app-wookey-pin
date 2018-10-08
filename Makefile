@@ -48,7 +48,7 @@ LDFLAGS += $(EXTRA_LDFLAGS) -L$(APP_BUILD_DIR)
 LDFLAGS += $(AFLAGS) -fno-builtin -nostdlib -nostartfiles
 
 # project's library you whish to use...
-LD_LIBS += -lstd -lshell -lconsole -lusart -lspi -ltouch -ltft
+LD_LIBS += -lstd -lshell -lconsole -lusart #-lspi -ltouch -ltft
 
 ###################################################################
 # okay let's list our source files and generated files now
