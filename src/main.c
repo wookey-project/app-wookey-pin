@@ -11,6 +11,9 @@
 #ifdef CONFIG_APP_PIN_INPUT_USART
 #include "libconsole.h"
 #else
+#include "pin.h"
+#include "wookey.h"
+//#include "peur.h"
 #include "libspi.h"
 #include "libtouch.h"
 #include "libtft.h"
@@ -18,6 +21,9 @@
 #include "libshell.h"
 #include "ipc_proto.h"
 #include "autoconf.h"
+
+
+#define PIN_LENGTH 4
 
 static void my_irq_handler(void);
 
@@ -65,7 +71,13 @@ int _main(uint32_t task_id)
         while (1)
             ;
     }
-    printf("Registered SPI1 and TFT.\n");
+    if (touch_early_init()) {
+        printf("ERROR: registering Touchscreen failed.\n");
+        while (1)
+            ;
+    }
+
+    printf("Registered SPI1, Touchscreen and TFT.\n");
 #endif
 
     ret = sys_init(INIT_GETTASKID, "smart", &id_smart);
@@ -108,9 +120,10 @@ int _main(uint32_t task_id)
      * End of full task end_of_init synchronization
      *******************************************/
 
-    char * pin = 0;
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
+    char * pin = 0;
+
     shell_init();
     if (ret == 0) {
         printf("USART4 is now configured !\n");
@@ -120,9 +133,16 @@ int _main(uint32_t task_id)
     console_log("[USART4] Pin initialized usart...\n");
     console_flush();
 #else
+    // FIXME fixed to 8 char max... should be configurable
+    char pin[9] = { 0 };
+
     if (tft_init()) {
         printf("error during TFT initialization!\n");
     }
+    if (touch_init()) {
+        printf("error during Touch initialization!\n");
+    }
+
 #endif
 
 
@@ -132,7 +152,6 @@ int _main(uint32_t task_id)
      *******************************************/
     uint32_t pin_len = 0;
     /* FIXME: pin size 8 */
-    char test_pin[9] = { 0 };
 
     id = id_smart;
     size = 2;
@@ -146,6 +165,8 @@ int _main(uint32_t task_id)
     }
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
+    char test_pin[9] = { 0 };
+
     console_log("Enter pin code please\n");
     console_flush();
     //FIXME test
@@ -165,13 +186,25 @@ int _main(uint32_t task_id)
     tft_setfg(200,200,200);
     tft_setbg(5,0,5);
     tft_set_cursor_pos(0,29);
-    tft_puts("  Please enter ");
-    tft_puts("  Please enter ");
-    tft_puts("  Please enter ");
-    tft_puts("  Please enter ");
-    tft_puts("  Please enter ");
-    tft_puts("  Please enter ");
-    tft_puts("  Please enter ");
+	
+	tft_fill_rectangle(0,240,0,320,0,0,0);
+	tft_setfg(200,200,200);
+	tft_setbg(5,0,5);
+	tft_set_cursor_pos(0,0);
+	tft_puts("  Please enter ");
+	tft_set_cursor_pos(0,29);
+	tft_puts("    PIN CODE");
+
+    pin_len=PIN_LENGTH;
+
+	get_pin(0,240,60,320,pin,pin_len);
+	{
+	  printf("Pin GIVEN!\n");
+      printf("pin is %s\n", pin);
+	}
+    // FIXME win vs loozer screen, should be printed after
+    // response from SMART task
+
 #endif
     ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
     ipc_sync_cmd.state = SYNC_DONE;
@@ -184,6 +217,40 @@ int _main(uint32_t task_id)
         ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
     } while (ret != SYS_E_DONE);
     printf("Pin sent to smart\n");
+
+
+    // waiting for smart response, to print the result on the screen
+    id = id_smart;
+    size = sizeof(struct sync_command);
+    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+   
+    if (ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd.state == SYNC_DONE)
+    {
+#ifdef CONFIG_APP_PIN_INPUT_USART
+        console_log("valid PIN, continuing...\n");
+        console_flush();
+#else
+		tft_fill_rectangle(0,240,0,320,249,249,249);
+		tft_rle_image(0,0,logo_width,logo_height,colormap,logo,sizeof(logo));
+	  //tft_fill_rectangle(0,240,0,320,0,250,0);
+	  //tft_set_cursor_pos(50,130);
+	  //tft_puts("Winner!");
+#endif
+    }
+	else
+	{
+#ifdef CONFIG_APP_PIN_INPUT_USART
+        console_log("invalid PIN !!!\n");
+        console_flush();
+#else
+		tft_fill_rectangle(0,240,0,320,249,0,0);
+		//tft_rle_image(0,0,vador_width,vador_height,vador_colormap,vador,sizeof(vador));
+	//	tft_rle_image(0,0,peur_width,peur_height,peur_colormap,peur,sizeof(peur));
+	    tft_fill_rectangle(0,240,0,320,250,0,0);
+	    tft_set_cursor_pos(50,130);
+	    tft_puts("Looser!");
+#endif
+	}
 
 
     /* avoid exiting main thread */

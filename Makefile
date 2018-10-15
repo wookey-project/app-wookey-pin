@@ -28,7 +28,7 @@ APP_BUILD_DIR = $(BUILD_DIR)/apps/$(DIR_NAME)
 ###################################################################
 
 # Application CFLAGS, first yours...
-CFLAGS += -Isrc/ -Iinc/ -MMD -MP
+CFLAGS += -Isrc/ -Iinc/ -MMD -MP -Os
 # and the SDK ones
 CFLAGS += $(APPS_CFLAGS)
 
@@ -48,7 +48,11 @@ LDFLAGS += $(EXTRA_LDFLAGS) -L$(APP_BUILD_DIR)
 LDFLAGS += $(AFLAGS) -fno-builtin -nostdlib -nostartfiles
 
 # project's library you whish to use...
-LD_LIBS += -lstd -lshell -lconsole -lusart #-lspi -ltouch -ltft
+ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+LD_LIBS += -lstd -lspi -ltouch -ltft
+else
+LD_LIBS += -lstd -lshell -lconsole -lusart
+endif
 
 ###################################################################
 # okay let's list our source files and generated files now
