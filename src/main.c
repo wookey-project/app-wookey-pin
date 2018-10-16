@@ -12,6 +12,7 @@
 #include "libconsole.h"
 #else
 #include "pin.h"
+#include "lock.h"
 #include "wookey.h"
 //#include "peur.h"
 #include "libspi.h"
@@ -92,6 +93,43 @@ int _main(uint32_t task_id)
     ret = sys_init(INIT_DONE);
     printf("sys_init returns %s !\n", strerror(ret));
 
+
+    /*******************************************
+     * Initialize the screen and print logo at boot time
+     *******************************************/
+
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+    // FIXME fixed to 8 char max... should be configurable
+    char pin[9] = { 0 };
+
+    if (tft_init()) {
+        printf("error during TFT initialization!\n");
+    }
+    if (touch_init()) {
+        printf("error during Touch initialization!\n");
+    }
+
+    tft_fill_rectangle(0,240,0,320,249,249,249);
+    tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+
+	tft_setfg(0,0,0);
+	tft_setbg(249,249,249);
+	tft_set_cursor_pos(0,260);
+	tft_puts(" Wookey LOCKED");
+#else
+    char * pin = 0;
+
+    shell_init();
+    if (ret == 0) {
+        printf("USART4 is now configured !\n");
+    } else {
+        printf("error during configuration of USART4\n");
+    }
+    console_log("[USART4] Pin initialized usart...\n");
+    console_flush();
+#endif
+
+
     /*******************************************
      * let's syncrhonize with other tasks
      *******************************************/
@@ -120,30 +158,6 @@ int _main(uint32_t task_id)
      * End of full task end_of_init synchronization
      *******************************************/
 
-
-#ifdef CONFIG_APP_PIN_INPUT_USART
-    char * pin = 0;
-
-    shell_init();
-    if (ret == 0) {
-        printf("USART4 is now configured !\n");
-    } else {
-        printf("error during configuration of USART4\n");
-    }
-    console_log("[USART4] Pin initialized usart...\n");
-    console_flush();
-#else
-    // FIXME fixed to 8 char max... should be configurable
-    char pin[9] = { 0 };
-
-    if (tft_init()) {
-        printf("error during TFT initialization!\n");
-    }
-    if (touch_init()) {
-        printf("error during Touch initialization!\n");
-    }
-
-#endif
 
 
     /*******************************************

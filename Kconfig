@@ -46,12 +46,16 @@ config APP_PIN_STACKSIZE
     (i.e. 8k). Depending on the number of slots required, and the usage,
     the stack can be bigger or smaller.
     
-config APP_PIN_SHM
-  bool "Shared memory usage"
-  depends on APP_PIN
-  default n
+config APP_PIN_PRIO
+  int "Pin application priority"
+  default 2
   ---help---
-    say YES if PIN requires shared memory to communicate with others
+    Set the Pin application priority (between 0 (the lower) to 255 (the higher)).
+    Only used when the RMA scheduler is executed. In this later case:
+    - Tasks of higher priority are executed while they are runnable
+    - Tasks of same priority are executed respecting a Round-Robin scheduling
+    When using priority and RMA scheduling, please take care to yield()
+    as much as possible to avoid deny of service to lower priority tasks
 
 choice
   prompt "PIN human interaction mode"
