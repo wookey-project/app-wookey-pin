@@ -5,6 +5,8 @@
  *
  */
 
+#define CONFIG_LOGO_LOCK 0
+
 #include "api/syscall.h"
 #include "api/print.h"
 #include "libusart.h"
@@ -12,7 +14,11 @@
 #include "libconsole.h"
 #else
 #include "pin.h"
+#if CONFIG_LOGO_LOCK
 #include "lock.h"
+#else
+#include "lock2.h"
+#endif
 #include "wookey.h"
 //#include "peur.h"
 #include "libspi.h"
@@ -112,10 +118,12 @@ int _main(uint32_t task_id)
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
 
+# if CONFIG_LOGO_LOCK
 	tft_setfg(0,0,0);
 	tft_setbg(249,249,249);
 	tft_set_cursor_pos(0,260);
 	tft_puts(" Wookey LOCKED");
+# endif
 #else
     char * pin = 0;
 
