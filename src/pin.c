@@ -11,6 +11,8 @@ extern const int font_width;
 extern const int font_height;
 extern const int font_blankskip;
 
+#define PIN_DEBUG 0
+
 #define SCREEN_SIZE_X 240
 #define SCREEN_SIZE_Y 320
 
@@ -212,7 +214,9 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
       //touch_refresh_pos();
       posy=touch_getx();
       posx=touch_gety();
+#if PIN_DEBUG
       printf("posx %d posy %d\n",posx,posy);
+#endif
       //Locate the column
       if(posx>=x1 && posx<=(x1+hsize))
 	colx=0;
@@ -273,7 +277,9 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
           x1+colx*hspace+colx*hsize+hsize-2,
           y1+coly*vspace+coly*vsize+2,
           y1+coly*vspace+coly*vsize+vsize-2,keys[mycase]);
+#if PIN_DEBUG
       printf("changement de case lastcase %d mycase %d\n",lastcase,mycase);
+#endif
       lastcase=mycase;
       lastx=colx;
       lasty=coly;
@@ -288,10 +294,11 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
 	y1+lasty*vspace+lasty*vsize+2,
 	y1+lasty*vspace+lasty*vsize+vsize-2, keys[lastcase]);
     //Check for 'Cor' or 'Ok'
+#if PIN_DEBUG
     printf("lastx %d lasty %d\n",lastx,lasty);
+#endif
     if ((lasty==4) && (lastx==0))
     {
-	    printf("je repeind en rouge\n");
 	 //tft_setbg(WOOKEY_RED);  
 	 pin_draw_case(x1+lastx*hspace+lastx*hsize+2,
 	x1+lastx*hspace+lastx*hsize+hsize-2,
@@ -302,29 +309,29 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
       {
 	mypin[nb_given]=0;
 	nb_given--;//just to catch the ++ of pin_redraw_text_footer
+#if PIN_DEBUG
       printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
-      }
-      else
-      {
-	      printf("toto nb_given %d nb_pin %d\n",nb_given,nb_pin);
+#endif
       }
     }
     else if ((lasty==4) && (lastx==2))
     {
-	 //tft_setbg(WOOKEY_GREEN);  
-    pin_draw_case(x1+lastx*hspace+lastx*hsize+2,
-	x1+lastx*hspace+lastx*hsize+hsize-2,
-	y1+lasty*vspace+lasty*vsize+2,
-	y1+lasty*vspace+lasty*vsize+vsize-2, keys[lastcase],WOOKEY_GREEN);
-      //Last touch was Ok 
-      printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
-      if(nb_given == nb_pin)
-	return;	
+        //tft_setbg(WOOKEY_GREEN);  
+        pin_draw_case(x1+lastx*hspace+lastx*hsize+2,
+                x1+lastx*hspace+lastx*hsize+hsize-2,
+                y1+lasty*vspace+lasty*vsize+2,
+                y1+lasty*vspace+lasty*vsize+vsize-2, keys[lastcase],WOOKEY_GREEN);
+        //Last touch was Ok 
+#if PIN_DEBUG
+        printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
+#endif
+        if(nb_given == nb_pin)
+            return;	
     }
     else
     {
-      if(nb_given<nb_pin)
-	mypin[nb_given++]=keys[lastcase][0];
+        if(nb_given<nb_pin)
+            mypin[nb_given++]=keys[lastcase][0];
     }
     //Redraw text footer
     pin_redraw_text_footer(nb_given, x1+2, x2-hspace-2,

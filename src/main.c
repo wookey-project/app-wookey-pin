@@ -272,8 +272,8 @@ int _main(uint32_t task_id)
 #else
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
-    tft_fill_rectangle(20,20+fail_height,150,150+fail_width,255,255,255);
-    tft_rle_image(20,150,fail_width,fail_height,fail_colormap,fail,sizeof(fail));
+//    tft_fill_rectangle(20,20+fail_height,150,150+fail_width,255,255,255);
+    tft_rle_image(150,20,fail_width,fail_height,fail_colormap,fail,sizeof(fail));
 #endif
 	}
 
