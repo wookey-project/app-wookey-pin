@@ -10,21 +10,24 @@
 #include "api/syscall.h"
 #include "api/print.h"
 #include "libusart.h"
+
 #ifdef CONFIG_APP_PIN_INPUT_USART
-#include "libconsole.h"
+# include "libconsole.h"
 #else
-#include "pin.h"
-#if CONFIG_LOGO_LOCK
-#include "lock.h"
-#else
-#include "lock2.h"
-#endif
-#include "wookey.h"
+# include "pin.h"
+# if CONFIG_LOGO_LOCK
+#  include "lock.h"
+# else
+#  include "lock2.h"
+# endif
+# include "fail.h"
+# include "wookey.h"
 //#include "peur.h"
-#include "libspi.h"
-#include "libtouch.h"
-#include "libtft.h"
+# include "libspi.h"
+# include "libtouch.h"
+# include "libtft.h"
 #endif
+
 #include "libshell.h"
 #include "ipc_proto.h"
 #include "autoconf.h"
@@ -55,7 +58,9 @@ int _main(uint32_t task_id)
     uint8_t id_smart;
     uint8_t id;
     uint8_t ret;
-    struct sync_command ipc_sync_cmd;
+
+    struct sync_command      ipc_sync_cmd;
+    struct sync_command_data ipc_sync_cmd_data;
 
     printf("Hello ! I'm pin, my id is %x\n", task_id);
 
@@ -141,7 +146,7 @@ int _main(uint32_t task_id)
     /*******************************************
      * let's syncrhonize with other tasks
      *******************************************/
-    logsize_t size = 2;
+    logsize_t size = sizeof (struct sync_command);
 
     printf("sending end_of_init syncrhonization to smart\n");
     ipc_sync_cmd.magic = MAGIC_TASK_STATE_CMD;
@@ -176,7 +181,7 @@ int _main(uint32_t task_id)
     /* FIXME: pin size 8 */
 
     id = id_smart;
-    size = 2;
+    size = sizeof (struct sync_command);
     do {
         ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
     } while (ret != SYS_E_DONE);
@@ -228,15 +233,15 @@ int _main(uint32_t task_id)
     // response from SMART task
 
 #endif
-    ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
-    ipc_sync_cmd.state = SYNC_DONE;
-    ipc_sync_cmd.data_size = (uint8_t)pin_len;
-    memset(&ipc_sync_cmd.data, 0x0, 32);
-    memcpy(&ipc_sync_cmd.data, pin, pin_len);
+    ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
+    ipc_sync_cmd_data.state = SYNC_DONE;
+    ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
+    memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
+    memcpy(&ipc_sync_cmd_data.data.u8, pin, pin_len);
 
     do {
-        size = 3 + pin_len;
-        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+        size = sizeof(struct sync_command_data);
+        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
     } while (ret != SYS_E_DONE);
     printf("Pin sent to smart\n");
 
@@ -265,12 +270,10 @@ int _main(uint32_t task_id)
         console_log("invalid PIN !!!\n");
         console_flush();
 #else
-		tft_fill_rectangle(0,240,0,320,249,0,0);
-		//tft_rle_image(0,0,vador_width,vador_height,vador_colormap,vador,sizeof(vador));
-	//	tft_rle_image(0,0,peur_width,peur_height,peur_colormap,peur,sizeof(peur));
-	    tft_fill_rectangle(0,240,0,320,250,0,0);
-	    tft_set_cursor_pos(50,130);
-	    tft_puts("Looser!");
+    tft_fill_rectangle(0,240,0,320,249,249,249);
+    tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+    tft_fill_rectangle(20,20+fail_height,150,150+fail_width,255,255,255);
+    tft_rle_image(20,150,fail_width,fail_height,fail_colormap,fail,sizeof(fail));
 #endif
 	}
 
