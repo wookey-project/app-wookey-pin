@@ -1,4 +1,6 @@
+#include "autoconf.h"
 #ifdef CONFIG_APP_PIN_INPUT_USART
+/* usart mode. This file is not needed */
 #else
 #include "libtft.h"
 #include "libtouch.h"

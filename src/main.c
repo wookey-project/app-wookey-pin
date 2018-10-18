@@ -188,7 +188,7 @@ int _main(uint32_t task_id)
 
     if (   ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_CMD
         && ipc_sync_cmd.state == SYNC_ASK_FOR_DATA) {
-        printf("smart is asking for pin, asking user through UART...\n");
+        printf("smart is asking for pin, asking user...\n");
     }
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
@@ -196,14 +196,8 @@ int _main(uint32_t task_id)
 
     console_log("Enter pin code please\n");
     console_flush();
-    //FIXME test
-    //shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
-    strncpy(test_pin, "12345678", 8);
-    pin = test_pin;
-    pin_len = 8;
-
-    console_log("pin is %s\n", pin);
-    printf("pin len is %x\n", pin_len);
+    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+    console_log("pin registered!\n");
     console_flush();
 #else
     tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
