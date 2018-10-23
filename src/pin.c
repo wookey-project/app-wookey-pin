@@ -7,7 +7,7 @@
 #include "api/types.h"
 #include "api/syscall.h"
 #include "api/print.h"
-#include "get_random.h"
+#include "api/random.h"
 #include "pin.h"
 extern const int font_width;
 extern const int font_height;

@@ -192,8 +192,6 @@ int _main(uint32_t task_id)
     }
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
-    char test_pin[9] = { 0 };
-
     console_log("Enter pin code please\n");
     console_flush();
     shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
