@@ -20,8 +20,8 @@
 # else
 #  include "lock2.h"
 # endif
+# include "menu.h"
 # include "fail.h"
-# include "wookey.h"
 //#include "peur.h"
 # include "libspi.h"
 # include "libtouch.h"
@@ -250,7 +250,7 @@ int _main(uint32_t task_id)
         console_flush();
 #else
 		tft_fill_rectangle(0,240,0,320,249,249,249);
-		tft_rle_image(0,0,logo_width,logo_height,colormap,logo,sizeof(logo));
+        draw_background();
 	  //tft_fill_rectangle(0,240,0,320,0,250,0);
 	  //tft_set_cursor_pos(50,130);
 	  //tft_puts("Winner!");
@@ -269,11 +269,15 @@ int _main(uint32_t task_id)
 #endif
 	}
 
+    /*************************************************************
+     * Starting of PIN main loop, now that PIN has been delivered
+     ************************************************************/
+
+    draw_background();
+    draw_menu(240,320, true);
 
     /* avoid exiting main thread */
-    while (1) {
-       sys_yield();
-    }
+    menu_get_events();
     /* should return to do_endoftask() */
     return 0;
 }

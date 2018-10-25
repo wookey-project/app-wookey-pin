@@ -205,7 +205,10 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
     int lastx=0,lasty=0;
     //Wait for touchscreen to be touched
     touch_read_X_DFR();//Ensures that PenIRQ is enabled
-    while(!(touch_is_touched()));
+    while(!(touch_is_touched())) {
+        touch_enable_exti();
+        sys_yield();
+    }
     //Refresh the actual positions
     touch_refresh_pos();
     //Follow the motion on the screen
