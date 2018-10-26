@@ -4,8 +4,9 @@
 #include "api/print.h"
 #include "api/types.h"
 #include "api/syscall.h"
-#include "wookey.h"
 #include "libtouch.h"
+#include "bg.h"
+#include "rtc.h"
 
 extern const int font_width;
 extern const int font_height;
@@ -39,6 +40,7 @@ void draw_menubox(int x1,int x2, int y1, int y2, char *c)
   posx=x1 + 10; // left align
   posy=(y2-y1-font_height/2)/2;
   tft_set_cursor_pos(x1+posx,posy+y1);
+  tft_setfg(255-r,255-g,255-b);
   tft_puts(c);
 }
 
@@ -59,15 +61,18 @@ void draw_menulist(int x, int y, uint8_t size, ...)
     va_start(args, size);
     for (uint8_t i = 0; i < size; ++i) {
         menu_names[i] = va_arg(args, char*);
-        draw_menubox(x, x+200, cury, cury+32, menu_names[i]);
-        cury += 32;
+        draw_menubox(x, x+200, cury, cury+40, menu_names[i]);
+        cury += 40;
     }
     va_end(args);
 }
 
 void draw_background(void)
 {
-    tft_rle_image(0,0,logo_width,logo_height,colormap,logo,sizeof(logo));
+
+    /* background color homogeneous with bg image */
+    tft_fill_rectangle(0,240,0,340,54,36,99);
+    tft_rle_image(0,34,bg_width,bg_height,bg_colormap,bg,sizeof(bg));
 }
 
 static bool menu_opened = false;
@@ -104,8 +109,9 @@ void menu_draw_button(bool invert)
 
 }
 
-void unroll_menulist(void)
+void unroll_menulist(uint32_t x, uint32_t y, uint8_t size)
 {
+    tft_rle_image(x,y,bg_width,((40+2)*size),bg_colormap,bg,sizeof(bg));
 }
 
 extern uint32_t numexti;
@@ -113,19 +119,27 @@ extern uint32_t numexti;
 void menu_get_events(void)
 {
   uint64_t ts = 0;
-  char timestamp[10] = {0};
+  char *timestamp = 0;
   while(1)
   {
-    touch_read_X_DFR();//Ensures that PenIRQ is enabled
+    touch_read_X_DFR();/* Ensures that PenIRQ is enabled */
+    /*
+     * Between touch_read_X_DFR and touch_is_touched, we need to wait a little
+     * or touch_is_touched() will return an invalid value
+     */
     sys_sleep(10, SLEEP_MODE_INTERRUPTIBLE);
-    //Wait for touchscreen to be touched
+
+    /* Wait loop for touchscreen to be touched */
     while(!(touch_is_touched())) {
-        printf("=> enable exti and sleep\n");
         touch_enable_exti();
+        /* Here we sleep for 1 second in order to print the
+         * current timestamp on the menubar every second
+         * We can be interrupted by the touchscreen if needed
+         */
         sys_sleep(1000, SLEEP_MODE_INTERRUPTIBLE);
         sys_get_systick(&ts, PREC_MILLI);
-        sprintf(timestamp, 10, "%d", (uint32_t)(ts / 1000));
-        tft_set_cursor_pos(100,0);
+        timestamp = get_timestamp((uint32_t)(ts / 1000));
+        tft_set_cursor_pos(115,0);
         tft_setfg(235,235,235);
         tft_setbg(0,0,0);
         tft_puts(timestamp);
@@ -135,20 +149,19 @@ void menu_get_events(void)
     //Follow the motion on the screen
     while (touch_refresh_pos(),touch_is_touched())
     {
-        printf("=> touch is touched !\n");
         int posx,posy;
-      //touch_refresh_pos();
-      posy=touch_getx();
-      posx=touch_gety();
+        //touch_refresh_pos();
+        posy=touch_getx();
+        posx=touch_gety();
 
-      menu_draw_button(!menu_opened);
-      if (menu_is_touched(posx, posy) && !menu_opened) {
-          menu_draw_button(true);
-          draw_menulist(10,34, 4, "config", "state", "lock", "info");
-      } else {
-          menu_draw_button(false);
-          //unroll_menulist(10,34, 4);
-      }
+        menu_draw_button(!menu_opened);
+        if (menu_is_touched(posx, posy) && !menu_opened) {
+            menu_draw_button(true);
+            draw_menulist(10,34, 4, "config", "state", "lock", "info");
+        } else {
+            menu_draw_button(false);
+            unroll_menulist(0,34, 4);
+        }
     }
     menu_opened = !menu_opened;
   }
