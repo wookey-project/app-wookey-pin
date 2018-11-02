@@ -7,6 +7,7 @@
 #include "libtouch.h"
 #include "bg.h"
 #include "rtc.h"
+#include "pin.h"
 
 extern const int font_width;
 extern const int font_height;
@@ -138,6 +139,8 @@ void menu_get_events(void)
 {
   uint64_t ts = 0;
   char *timestamp = 0;
+  char pin[32] = { 0 };
+  uint8_t pin_len = 8;
   while(1)
   {
     touch_read_X_DFR();/* Ensures that PenIRQ is enabled */
@@ -182,7 +185,8 @@ void menu_get_events(void)
           // unroll because the user touched other part of the screen
           if (menu_opened) {
             menu_draw_button(false);
-            unroll_menulist(0,34, 4);
+            //unroll_menulist(0,34, 4);
+            get_txt_pin(0,240,60,320,pin,pin_len);
             menu_opened = false;
           }
         } else if (menu_is_touched(posx,posy) && menu_opened) {
