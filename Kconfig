@@ -71,6 +71,12 @@ choice
       ---help---
       User interaction for PIN ask is done using dedicated
       screen/touchscreen couple
+    config APP_PIN_INPUT_MOCKUP
+      bool "PIN is in mockup mode (no user interaction)"
+      ---help---
+      User interaction for PIN is not needed, which means
+      that the pin is hardcoded in the source code for test
+      mode instead of asked to the user
 endchoice
 
 if APP_PIN_INPUT_USART

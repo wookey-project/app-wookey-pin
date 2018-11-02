@@ -72,7 +72,7 @@ int _main(uint32_t task_id)
             ;
     }
     printf("Registered USART through libshell %d\n", ret);
-#else /* graphical touchscreen */
+#elif CONFIG_APP_PIN_INPUT_SCREEN /* graphical touchscreen */
     if (spi1_early_init()) {
         printf("ERROR: registering SPI1 failed.\n");
         while (1)
@@ -90,6 +90,10 @@ int _main(uint32_t task_id)
     }
 
     printf("Registered SPI1, Touchscreen and TFT.\n");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    /* nothing to do */
+#else
+# error "input mode must be set"
 #endif
 
     ret = sys_init(INIT_GETTASKID, "smart", &id_smart);
@@ -129,7 +133,7 @@ int _main(uint32_t task_id)
 	tft_set_cursor_pos(0,260);
 	tft_puts(" Wookey LOCKED");
 # endif
-#else
+#elif CONFIG_APP_PIN_INPUT_USART
     char * pin = 0;
 
     shell_init();
@@ -140,6 +144,11 @@ int _main(uint32_t task_id)
     }
     console_log("[USART4] Pin initialized usart...\n");
     console_flush();
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    char pin[9] = { 0 };
+    /* nothing to do */
+#else
+# error "input type must be set"
 #endif
 
 
@@ -197,7 +206,7 @@ int _main(uint32_t task_id)
     shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
     console_log("pin registered!\n");
     console_flush();
-#else
+#elif CONFIG_APP_PIN_INPUT_SCREEN
     tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
     tft_fill_rectangle_unlocked(0,240,0,320,255,0,0);
     //tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
@@ -223,8 +232,19 @@ int _main(uint32_t task_id)
 	}
     // FIXME win vs loozer screen, should be printed after
     // response from SMART task
-
+    //
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    pin_len = 4;
+    pin[0] = '1';
+    pin[1] = '3';
+    pin[2] = '3';
+    pin[3] = '7';
+    pin[4] = 0;
+    /* nothing to do */
+#else
+# error "input type must be set"
 #endif
+
     ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
     ipc_sync_cmd_data.state = SYNC_DONE;
     ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
@@ -248,12 +268,16 @@ int _main(uint32_t task_id)
 #ifdef CONFIG_APP_PIN_INPUT_USART
         console_log("valid PIN, continuing...\n");
         console_flush();
-#else
+#elif CONFIG_APP_PIN_INPUT_SCREEN
 		tft_fill_rectangle(0,240,0,320,249,249,249);
         draw_background();
 	  //tft_fill_rectangle(0,240,0,320,0,250,0);
 	  //tft_set_cursor_pos(50,130);
 	  //tft_puts("Winner!");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+      /* nothing to do */
+#else
+# error "input mode must be set"
 #endif
     }
 	else
@@ -261,23 +285,42 @@ int _main(uint32_t task_id)
 #ifdef CONFIG_APP_PIN_INPUT_USART
         console_log("invalid PIN !!!\n");
         console_flush();
-#else
+#elif CONFIG_APP_PIN_INPUT_SCREEN
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
 //    tft_fill_rectangle(20,20+fail_height,150,150+fail_width,255,255,255);
     tft_rle_image(150,20,fail_width,fail_height,fail_colormap,fail,sizeof(fail));
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+      /* nothing to do */
+#else
+# error "input mode must be set"
+
 #endif
 	}
 
     /*************************************************************
      * Starting of PIN main loop, now that PIN has been delivered
      ************************************************************/
-
+#ifdef CONFIG_APP_PIN_INPUT_USART
+    /* nothing to do */
+    do {
+    sys_yield();
+    } while (1);
+#elif CONFIG_APP_PIN_INPUT_SCREEN
     draw_background();
     draw_menu(240,320, true);
 
     /* avoid exiting main thread */
     menu_get_events();
     /* should return to do_endoftask() */
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    /* nothing to do */
+    do {
+       sys_yield();
+    } while (1);
+#else
+# error "input mode must be set"
+#endif
+
     return 0;
 }

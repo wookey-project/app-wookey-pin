@@ -59,7 +59,11 @@ endif
 ###################################################################
 
 CSRC_DIR = src
+ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
 SRC = $(wildcard $(CSRC_DIR)/*.c)
+else
+SRC = $(wildcard $(CSRC_DIR)/main.c)
+endif
 OBJ = $(patsubst %.c,$(APP_BUILD_DIR)/%.o,$(SRC))
 DEP = $(OBJ:.o=.d)
 
