@@ -35,7 +35,7 @@ int mystrlen(char *s)
 }
 
 
-void draw_txt_pin(int x1,int x2, int y1, int y2, uint8_t offset)
+void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
 {
   const int hspace=5, vspace=10, char_width=font_width/128;
   int hsize = (x2-x1-3*hspace)/3;
@@ -318,7 +318,7 @@ void pin_highlight_case(int x1,int x2, int y1, int y2, char *c)
 }
 
 
-void get_txt_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
+void get_txt_pad(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
 {
   const int hspace=5, vspace=10;
   unsigned char nb_given=0;
@@ -338,7 +338,7 @@ void get_txt_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
   tft_puts("  Please enter ");
   tft_set_cursor_pos(0,29);
   tft_puts("PET PIN Code");
-  draw_txt_pin(x1,x2,y1,y2, 0);
+  draw_txt_pad(x1,x2,y1,y2, 0);
 
 //Main interaction loop
   while(1) // wait for event
@@ -475,7 +475,7 @@ void get_txt_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
       printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
 #endif
       }
-      draw_txt_pin(x1,x2,y1,y2, offset);
+      draw_txt_pad(x1,x2,y1,y2, offset);
     }
     else if ((lasty==4) && (lastx==2))
     {
@@ -495,7 +495,7 @@ void get_txt_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
 #endif
         if(nb_given == nb_pin)
             return;	
-      draw_txt_pin(x1,x2,y1,y2, offset);
+      draw_txt_pad(x1,x2,y1,y2, offset);
     } else {
         mypin[nb_given++]=key[0];
     }
@@ -655,7 +655,7 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
 #if PIN_DEBUG
         printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
 #endif
-        if(nb_given == nb_pin)
+        //if(nb_given == nb_pin), always return when ok is pushed
             return;	
     }
     else

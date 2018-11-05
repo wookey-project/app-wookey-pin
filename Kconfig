@@ -57,6 +57,39 @@ config APP_PIN_PRIO
     When using priority and RMA scheduling, please take care to yield()
     as much as possible to avoid deny of service to lower priority tasks
 
+menu "Pin specific properties"
+
+config APP_PIN_MAX_PIN_LEN
+  int "Max Pin length (number of digit, from 4 to 12)"
+  range 4 12
+  default 4
+  ---help---
+  Maximum number of digit of the Pin
+
+config APP_PIN_MAX_PETPIN_LEN
+  int "Max Pet Pin length (number of digit, from 4 to 12)"
+  range 4 12
+  default 4
+  ---help---
+  Maximum number of digit of the Pet Pin
+
+config APP_PIN_MAX_PETNAME_LEN
+  int "Max Pet name length (number of digit, from 4 to 32)"
+  range 4 32
+  default 8
+  ---help---
+  Maximum number of chars of the Pet name
+
+config APP_PIN_MAX_PINTRIES
+  int "Max number of PIN try before reset"
+  range 1 3
+  default 3
+  ---help---
+  Maximum number of allowed Pin try before reseting the board.
+  This does not impact how the javacard manages the Max pintry
+  in its internal policy, but only the number of time the Pin
+  Pad is presented before reseting the card
+
 choice
   prompt "PIN human interaction mode"
   depends on APP_PIN
@@ -79,11 +112,31 @@ choice
       mode instead of asked to the user
 endchoice
 
+if APP_PIN_INPUT_MOCKUP
+
+config APP_PIN_MOCKUP_PIN_VALUE
+   string "Mockup pin value"
+   ---help---
+   Pin value that should be used in replacement of the PIN
+   entered by the user.
+   You can enter directly the numeric pin value here.
+
+config APP_PIN_MOCKUP_PETPIN_VALUE
+   string "Mockup pet-pin value"
+   ---help---
+   Pet Pin value that should be used in replacement of the
+   Pet PIN entered by the user.
+   You can enter directly the numeric value here.
+
+endif
+
 if APP_PIN_INPUT_USART
   config APP_PIN_INPUT_USART_ID
   int "PIN USART interface identifier"
   range 1 6 
 endif
+
+endmenu
 
 menu "Permissions"
     visible if APP_PIN

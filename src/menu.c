@@ -1,3 +1,4 @@
+#include "autoconf.h"
 #include "menu.h"
 #include "libtft.h"
 #include "api/string.h"
@@ -135,12 +136,14 @@ void unroll_menulist(uint32_t x, uint32_t y, uint8_t size)
 
 extern uint32_t numexti;
 
+#define MAX_PETNAME_LEN CONFIG_APP_PIN_MAX_PETNAME_LEN + 1
+
 void menu_get_events(void)
 {
   uint64_t ts = 0;
   char *timestamp = 0;
-  char pin[32] = { 0 };
-  uint8_t pin_len = 8;
+  char petname[MAX_PETNAME_LEN] = { 0 };
+  uint8_t petname_len = CONFIG_APP_PIN_MAX_PETNAME_LEN;
   while(1)
   {
     touch_read_X_DFR();/* Ensures that PenIRQ is enabled */
@@ -186,7 +189,7 @@ void menu_get_events(void)
           if (menu_opened) {
             menu_draw_button(false);
             //unroll_menulist(0,34, 4);
-            get_txt_pin(0,240,60,320,pin,pin_len);
+            get_txt_pad(0,240,60,320,petname,petname_len);
             menu_opened = false;
           }
         } else if (menu_is_touched(posx,posy) && menu_opened) {
