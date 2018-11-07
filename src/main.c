@@ -268,7 +268,63 @@ int _main(uint32_t task_id)
 #endif
                     }
                 } while (!valid_pin);
+                /*
+                 * now that a vaild pet pin has been received, we request the pet name from
+                 * smart, to show it to the user. This pet name must be validated by the user
+                 */
+                ipc_sync_cmd.magic = MAGIC_CRYPTO_PETPIN_CMD;
+                ipc_sync_cmd.state = SYNC_ASK_FOR_DATA;
 
+                do {
+                    size = sizeof(struct sync_command);
+                    ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                } while (ret != SYS_E_DONE);
+
+                /* waiting for smart response, to print the pet name on the screen */
+                id = id_smart;
+                size = sizeof(struct sync_command_data);
+                sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+
+
+                if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PETPIN_RESP &&
+                    ipc_sync_cmd_data.state == SYNC_DONE) {
+                    char *pet_name = (char*)ipc_sync_cmd_data.data.u8;
+                    uint8_t pet_name_len = ipc_sync_cmd_data.data_size;
+
+#ifdef CONFIG_APP_PIN_INPUT_USART
+                    console_log("Pet pin is \"%s\". Is it Okay (y/n)?\n");
+                    console_flush();
+                    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+                    if (pin_len == 1 && pin[0] = 'n') {
+                        console_log("Invalid pet name !!!\n");
+                        console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+                    if (get_petname_validation(pet_name, pet_name_len)) {
+                        tft_fill_rectangle(0,240,0,320,249,249,249);
+                        tft_set_cursor_pos(20,160);
+                        tft_setfg(0,0,0);
+                        tft_setbg(249,249,249);
+                        tft_puts(" Invalid Pet ");
+                        tft_set_cursor_pos(20,190);
+                        tft_puts("   Name !    ");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+                    if (0) {
+                        /* mockup mode has no pet name check */
+#else
+# error "input mode must be set"
+#endif
+                        ipc_sync_cmd.magic = MAGIC_CRYPTO_PETPIN_RESP;
+                        ipc_sync_cmd.state = SYNC_FAILURE;
+                    } else {
+                        ipc_sync_cmd.magic = MAGIC_CRYPTO_PETPIN_RESP;
+                        ipc_sync_cmd.state = SYNC_ACKNOWLEDGE;
+                    }
+                    do {
+                        size = sizeof(struct sync_command);
+                        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                    } while (ret != SYS_E_DONE);
+                }
+                
                 break;
             }
 

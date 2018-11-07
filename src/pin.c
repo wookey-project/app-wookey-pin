@@ -140,6 +140,65 @@ void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
 
 }
 
+void pin_draw_case(int x1,int x2, int y1, int y2, char *c, 
+			uint8_t r, uint8_t g, uint8_t b);
+
+uint8_t get_petname_validation(char *petname, uint8_t pet_name_len)
+{
+    pet_name_len = pet_name_len;
+  tft_setfg(200,200,200);
+  tft_setbg(5,0,5);
+  tft_set_cursor_pos(0,29);
+
+  tft_fill_rectangle(0,240,0,320,0,0,0);
+  tft_setfg(200,200,200);
+  tft_setbg(5,0,5);
+  tft_set_cursor_pos(0,0);
+  tft_puts("Please validate");
+  tft_set_cursor_pos(0,29);
+  tft_puts("  pet name  ");
+
+  pin_draw_case(10, 230, 70, 190, petname, 245, 245, 245);
+  pin_draw_case(10, 230, 200, 240, "    OK     ", 0, 245, 0);
+  pin_draw_case(10, 230, 250, 290, "  Invalid  ", 245, 0, 0);
+
+  while (1) {
+    touch_read_X_DFR();//Ensures that PenIRQ is enabled
+    /*
+     * Between touch_read_X_DFR and touch_is_touched, we need to wait a little
+     * or touch_is_touched() will return an invalid value
+     */
+    sys_sleep(10, SLEEP_MODE_INTERRUPTIBLE);
+
+    while(!(touch_is_touched())) {
+        touch_enable_exti();
+        sys_yield();
+    }
+    //Refresh the actual positions
+    touch_refresh_pos();
+    //Follow the motion on the screen
+    while(touch_refresh_pos(),touch_is_touched())
+    {
+      int posx,posy;
+      //touch_refresh_pos();
+      posy=touch_getx();
+      posx=touch_gety();
+
+      if (posx > 10 && posx < 230 && posy > 200 && posy < 240) {
+
+          /* OK pushed */
+          return 0;
+      }
+
+      if (posx > 10 && posx < 230 && posy > 250 && posy < 290) {
+          /* Invalid pushed */
+          return 1;
+      }
+    }
+  }
+  return 0;
+}
+
 void draw_pin(int x1,int x2, int y1, int y2)
 {
   const int hspace=5, vspace=10, char_width=font_width/128;
