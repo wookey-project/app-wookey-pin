@@ -186,129 +186,170 @@ int _main(uint32_t task_id)
 
 
     /*******************************************
-     * Wait for smart to ask for PIN code
-     * (when Smartcard is connected)
+     * Starting Pin task main loop automaton
+     * Waiting for SMART requests
      *******************************************/
-
-    uint8_t numtries = 0;
-    uint8_t maxtry = CONFIG_APP_PIN_MAX_PINTRIES;
+    
+    uint8_t pins_ok = 0;
     bool valid_pin = false;
+    uint8_t pin_len;
 
-
+    /* we loop here while Pet PIN *and* PIN have not been correctly asked, entered and validated by SMART */
     do {
-        uint32_t pin_len = 0;
-        /* FIXME: pin size 8 */
 
+        sys_yield();
         id = id_smart;
-        size = sizeof (struct sync_command);
-        do {
-            ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
-        } while (ret != SYS_E_DONE);
+        size = sizeof(struct dataplane_command);
 
-        if (   ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_CMD
-                && ipc_sync_cmd.state == SYNC_ASK_FOR_DATA) {
-            printf("smart is asking for pin, asking user...\n");
-        }
+        sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
 
+        switch (ipc_sync_cmd.magic) {
+
+            case MAGIC_CRYPTO_PETPIN_CMD:
+            {
+
+                valid_pin = false;
+                do {
+                    /* asking the user for pin, or get mockup value instead */
+                    printf("smart is asking for Pet pin, asking user...\n");
 #ifdef CONFIG_APP_PIN_INPUT_USART
-        console_log("Enter pin code please\n");
-        console_flush();
-        shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
-        console_log("pin registered!\n");
-        console_flush();
+                    console_log("Enter pet pin code please\n");
+                    console_flush();
+                    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+                    console_log("pin registered!\n");
+                    console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-        tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
-        tft_fill_rectangle_unlocked(0,240,0,320,255,0,0);
-        //tft_fill_rectangle_unlocked(0,240,0,320,0,255,0);
-        //tft_fill_rectangle_unlocked(0,240,0,320,0,0,255);
-        tft_setfg(200,200,200);
-        tft_setbg(5,0,5);
-        tft_set_cursor_pos(0,29);
+                    pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
 
-        tft_fill_rectangle(0,240,0,320,0,0,0);
-        tft_setfg(200,200,200);
-        tft_setbg(5,0,5);
-        tft_set_cursor_pos(0,0);
-        tft_puts("  Please enter ");
-        tft_set_cursor_pos(0,29);
-        tft_puts("    PIN CODE");
-
-        pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
-
-        get_pin(0,240,60,320,pin,pin_len);
-#if PIN_DEBUG
-        printf("Pin GIVEN!\n");
-        printf("pin is %s\n", pin);
-#endif
-        // FIXME win vs loozer screen, should be printed after
-        // response from SMART task
-        //
+                    get_pin(" Pet Pin Code ", 14, 0,240,60,320,pin,pin_len);
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-        pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
-        memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
-        /* nothing to do */
+                    pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
+                    memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
 #else
 # error "input type must be set"
 #endif
+                    /* send back the pin & pin len values to smart */
+                    ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PETPIN_RESP;
+                    ipc_sync_cmd_data.state = SYNC_DONE;
+                    ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
+                    memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
+                    memcpy(&ipc_sync_cmd_data.data.u8, pin, pin_len);
 
-        ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
-        ipc_sync_cmd_data.state = SYNC_DONE;
-        ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
-        memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
-        memcpy(&ipc_sync_cmd_data.data.u8, pin, pin_len);
-
-        do {
-            size = sizeof(struct sync_command_data);
-            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
-        } while (ret != SYS_E_DONE);
-        printf("Pin sent to smart\n");
+                    do {
+                        size = sizeof(struct sync_command_data);
+                        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
+                    } while (ret != SYS_E_DONE);
+                    printf("Pet Pin sent to smart\n");
 
 
-        // waiting for smart response, to print the result on the screen
-        id = id_smart;
-        size = sizeof(struct sync_command);
-        sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+                    /* waiting for smart response, to print the result on the screen */
+                    id = id_smart;
+                    size = sizeof(struct sync_command);
+                    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
 
-        if (ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd.state == SYNC_DONE)
-        {
-            valid_pin = true;
+                    if (ipc_sync_cmd.magic == MAGIC_CRYPTO_PETPIN_RESP && ipc_sync_cmd.state == SYNC_DONE)
+                    {
+                        valid_pin = true;
+                        pins_ok++;
 #ifdef CONFIG_APP_PIN_INPUT_USART
-            console_log("valid PIN, continuing...\n");
-            console_flush();
+                        console_log("valid PIN, continuing...\n");
+                        console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-            tft_fill_rectangle(0,240,0,320,249,249,249);
-            draw_background();
-            //tft_fill_rectangle(0,240,0,320,0,250,0);
-            //tft_set_cursor_pos(50,130);
-            //tft_puts("Winner!");
+                        tft_fill_rectangle(0,240,0,320,249,249,249);
+                        tft_set_cursor_pos(20,160);
+                        tft_setfg(0,0,0);
+                        tft_setbg(249,249,249);
+                        tft_puts("Please wait...");
+
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-            /* nothing to do */
+                        /* nothing to do */
 #else
 # error "input mode must be set"
 #endif
-        }
-        else
-        {
+                    }
+                } while (!valid_pin);
+
+                break;
+            }
+
+            case MAGIC_CRYPTO_PIN_CMD:
+            {
+
+                valid_pin = false;
+                do {
+                    /* asking the user for pin, or get mockup value instead */
+                    printf("smart is asking for user pin, asking user...\n");
 #ifdef CONFIG_APP_PIN_INPUT_USART
-            console_log("invalid PIN !!!\n");
-            console_flush();
+                    console_log("Enter user pin code please\n");
+                    console_flush();
+                    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+                    console_log("pin registered!\n");
+                    console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-            tft_fill_rectangle(0,240,0,320,249,249,249);
-            tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
-            //    tft_fill_rectangle(20,20+fail_height,150,150+fail_width,255,255,255);
-            tft_rle_image(150,20,fail_width,fail_height,fail_colormap,fail,sizeof(fail));
+                    pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
+
+                    get_pin("User Pin Code ", 14, 0,240,60,320,pin,pin_len);
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-            /* nothing to do */
+                    pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
+                    memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
+#else
+# error "input type must be set"
+#endif
+                    /* send back the pin & pin len values to smart */
+                    ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
+                    ipc_sync_cmd_data.state = SYNC_DONE;
+                    ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
+                    memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
+                    memcpy(&ipc_sync_cmd_data.data.u8, pin, pin_len);
+
+                    do {
+                        size = sizeof(struct sync_command_data);
+                        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
+                    } while (ret != SYS_E_DONE);
+                    printf("Pet Pin sent to smart\n");
+
+
+                    /* waiting for smart response, to print the result on the screen */
+                    id = id_smart;
+                    size = sizeof(struct sync_command);
+                    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+
+                    if (ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd.state == SYNC_DONE)
+                    {
+                        valid_pin = true;
+                        pins_ok++;
+#ifdef CONFIG_APP_PIN_INPUT_USART
+                        console_log("valid PIN, continuing...\n");
+                        console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+                        /* nothing to do */
+                        tft_fill_rectangle(0,240,0,320,249,249,249);
+                        tft_set_cursor_pos(20,160);
+                        tft_setfg(0,0,0);
+                        tft_setbg(249,249,249);
+                        tft_puts("Please wait...");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+                        /* nothing to do */
 #else
 # error "input mode must be set"
-
 #endif
+                    }
+                } while (!valid_pin);
+
+                break;
+
+            }
+
+            default: {
+                printf("Unknown request from SMART! [magic:%x]\n", ipc_sync_cmd.magic);
+                break;
+            }
         }
-        numtries++;
-    } while (!valid_pin && numtries < maxtry);
+    } while (pins_ok < 2);
+
 
     /*************************************************************
-     * Starting of PIN main loop, now that PIN has been delivered
+     * Starting of PIN main loop, now that PINs has been delivered
      ************************************************************/
 #ifdef CONFIG_APP_PIN_INPUT_USART
     /* nothing to do */

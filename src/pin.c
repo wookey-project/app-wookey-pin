@@ -237,6 +237,7 @@ void draw_pin(int x1,int x2, int y1, int y2)
 
 #endif
 }
+
 void dopermu(char **mykeys, const uint32_t mysize)
 {
   uint32_t i;
@@ -506,7 +507,10 @@ void get_txt_pad(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
 }
 
 
-void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
+void get_pin(const char *title,
+             uint32_t    title_len __attribute__((unused)),
+             int x1,int x2, int y1, int y2,
+             char *mypin, char nb_pin)
 {
   const int hspace=5, vspace=10;
   char *tmp;
@@ -521,6 +525,19 @@ void get_pin(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
   tmp=keys[9];
   keys[9]=keys[10];
   keys[10]=tmp;
+
+  tft_setfg(200,200,200);
+  tft_setbg(5,0,5);
+  tft_set_cursor_pos(0,29);
+
+  tft_fill_rectangle(0,240,0,320,0,0,0);
+  tft_setfg(200,200,200);
+  tft_setbg(5,0,5);
+  tft_set_cursor_pos(0,0);
+  tft_puts("  Please enter ");
+  tft_set_cursor_pos(0,29);
+  tft_puts((char*)title);
+
   draw_pin(x1,x2,y1,y2);
 //Main interaction loop
   while(1)
