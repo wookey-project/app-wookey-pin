@@ -9,7 +9,9 @@
 #define WOOKEY_ORANGE 255,213,19
 #define GRAY 226,226,226
 
-void get_txt_pad(int x1,int x2, int y1, int y2, char *mypin, char nb_pin);
+void get_txt_pad(const char *title,
+                 uint32_t    title_len __attribute__((unused)),
+                 int x1,int x2, int y1, int y2, char *mypin, char nb_pin);
 
 void get_pin(const char *title,
              uint32_t    title_len,

@@ -189,7 +189,7 @@ void menu_get_events(void)
           if (menu_opened) {
             menu_draw_button(false);
             //unroll_menulist(0,34, 4);
-            get_txt_pad(0,240,60,320,petname,petname_len);
+            get_txt_pad("   new string   ", 16, 0,240,60,320,petname,petname_len);
             menu_opened = false;
           }
         } else if (menu_is_touched(posx,posy) && menu_opened) {

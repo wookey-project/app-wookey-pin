@@ -378,7 +378,9 @@ void pin_highlight_case(int x1,int x2, int y1, int y2, char *c)
 }
 
 
-void get_txt_pad(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
+void get_txt_pad(const char *title,
+                 uint32_t    title_len __attribute__((unused)),
+                 int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
 {
   const int hspace=5, vspace=10;
   unsigned char nb_given=0;
@@ -397,7 +399,7 @@ void get_txt_pad(int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
   tft_set_cursor_pos(0,0);
   tft_puts("  Please enter ");
   tft_set_cursor_pos(0,29);
-  tft_puts("PET PIN Code");
+  tft_puts((char*)title);
   draw_txt_pad(x1,x2,y1,y2, 0);
 
 //Main interaction loop
