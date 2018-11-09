@@ -272,6 +272,8 @@ static int handle_petname(void)
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     if (0) {
         /* mockup mode has no pet name check */
+        pet_name = NULL;
+        pet_name_len = 0;
 #else
 # error "input mode must be set"
 #endif
