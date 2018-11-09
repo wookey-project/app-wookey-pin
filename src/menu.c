@@ -427,6 +427,19 @@ void menu_get_events(void)
                         nextmenu = MENU_WIPE;
                         break;
                     }
+                case BOX_LOCK:
+                    {
+                        /* ask smart for lock. Smart will reset the board */
+                        printf("[touched] box lock pushed !\n");
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_LOCK;
+                        ipc_sync_cmd.state = SYNC_WAIT;
+                        size = sizeof(struct sync_command);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+                        break;
+                    }
                 case BOX_RETURN:
                     {
                         printf("[touched] box return pushed !\n");
