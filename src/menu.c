@@ -31,6 +31,7 @@ extern const int font_height;
 extern const int font_blankskip;
 extern uint8_t id_smart;
 
+
 static const struct {
   uint8_t r;
   uint8_t g;
@@ -66,7 +67,8 @@ typedef enum {
 typedef enum {
     MENU_MAIN     = 0,
     MENU_SETTINGS = 1,
-    MENU_WIPE     = 2
+    MENU_WIPE     = 2,
+    MENU_STATUS   = 3
 } t_current_menu;
 
 static volatile t_current_menu menu = MENU_MAIN;
@@ -97,6 +99,14 @@ t_box get_box(int x, int y)
             }
             break;
         }
+        case MENU_STATUS:
+        {
+            if (x > 0 && x < 240 && y > 270 && y < 320) {
+                box = BOX_RETURN;
+            }
+            break;
+        }
+
         case MENU_SETTINGS:
         {
             if (x > 0 && x < 240 && y > 0 && y < 90) {
@@ -145,8 +155,8 @@ void draw_menubox2(int x1, int x2, int y1, int y2,
                    const uint8_t *icon,
                    const uint32_t icon_size)
 {
-  const int char_width=font_width/128;
-  int posx;
+    const int char_width = font_width/128;
+    int posx;
   // create the box color
   tft_fill_rectangle(x1,x2,y1,y2,0,0,0);
   tft_fill_rectangle(x1+2,x2-2,y1+2,y2-2,r,g,b);
@@ -167,6 +177,8 @@ void draw_menubox2(int x1, int x2, int y1, int y2,
 
 void draw_menu(int x, int y)
 {
+    const int char_width = font_width/128;
+    int cury;
     x = x;
     y = y;
   
@@ -212,6 +224,71 @@ void draw_menu(int x, int y)
                     sizeof(state));
             break;
         }
+        case MENU_STATUS:
+        {
+            cury = 0;
+            // print status information
+            tft_fill_rectangle(0,240,0,270,53,88,157);
+            tft_setfg(255,255,255);
+            tft_setbg(53,88,157);
+            tft_set_cursor_pos(0,cury);
+            tft_puts("crypto:");
+            cury += font_height/2;
+#if CONFIG_AES256_CBC_ESSIV
+            tft_set_cursor_pos(240 - (14*char_width),cury);
+            tft_puts("AES_CBC_ESSIV");
+#else
+            tft_set_cursor_pos(240 - (5*char_width),cury);
+            tft_puts("3DES");
+#endif
+            cury += font_height/2;
+            tft_set_cursor_pos(0,cury);
+            tft_puts("Update:");
+
+            cury += font_height/2;
+
+            tft_set_cursor_pos(40,cury);
+            tft_puts("DFU");
+            tft_set_cursor_pos(240 - (4*char_width),cury);
+#if CONFIG_FIRMWARE_DFU
+            tft_puts(" on");
+#else
+            tft_puts("off");
+#endif
+
+            cury += font_height/2;
+
+            tft_set_cursor_pos(40,cury);
+            tft_puts("DB");
+            tft_set_cursor_pos(240 - (4*char_width),cury);
+#if CONFIG_FIRMWARE_MODE_DUAL_BANK
+            tft_puts(" on");
+#else
+            tft_puts("off");
+#endif
+
+            cury += font_height/2;
+
+            tft_set_cursor_pos(0,cury);
+            tft_puts("FW version");
+
+            cury += font_height/2;
+
+            tft_set_cursor_pos(240 - (6*char_width),cury);
+            tft_puts("0.0.1");
+
+
+            // return button
+            draw_menubox2(0,240,270,320,
+                    0,
+                    133,135,132,
+                    returning_colormap,
+                    returning,
+                    sizeof(returning));
+            break;
+
+        }
+
         case MENU_SETTINGS:
         {
             draw_menubox2(0,240,0,90,
@@ -367,6 +444,8 @@ void menu_get_events(void)
     logsize_t size;
     uint8_t ret;
 
+    const int char_width = font_width/128;
+
     t_current_menu nextmenu = menu;
 
     while(1)
@@ -382,7 +461,7 @@ void menu_get_events(void)
         /* Wait loop for touchscreen to be touched */
         while (!(touch_refresh_pos(),touch_is_touched())) {
             touch_enable_exti();
-            if (menu == MENU_MAIN) {
+            if (menu == MENU_STATUS) {
                 //printf("[not touched] main menu\n");
                 uint64_t ts = 0;
                 char *timestamp = 0;
@@ -394,7 +473,7 @@ void menu_get_events(void)
                 //printf("[not touched] print timestamp\n");
                 sys_get_systick(&ts, PREC_MILLI);
                 timestamp = get_timestamp((uint32_t)(ts / 1000));
-                tft_set_cursor_pos(0,170);
+                tft_set_cursor_pos(120 - ((8*char_width)/2),240);
                 tft_setfg(235,235,235);
                 tft_setbg(53,88,157);
                 tft_puts(timestamp);
@@ -421,6 +500,13 @@ void menu_get_events(void)
                         nextmenu = MENU_SETTINGS;
                         break;
                     }
+                case BOX_STATUS:
+                    {
+                        printf("[touched] box status pushed !\n");
+                        nextmenu = MENU_STATUS;
+                        break;
+                    }
+
                 case BOX_WIPE:
                     {
                         printf("[touched] box wipe pushed !\n");

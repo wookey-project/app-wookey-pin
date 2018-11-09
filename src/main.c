@@ -139,6 +139,28 @@ static int handle_pin(char *pin, uint8_t pin_len, t_pin_mode mode)
 
 
         /********************************************************
+         * before sending the pin to smart and wait for ack,
+         * print a 'wait message', as smart takes some time
+         * to check and initiate the secure channel
+         *******************************************************/
+#ifdef CONFIG_APP_PIN_INPUT_USART
+            console_log("Please wait...\n");
+            console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+            tft_fill_rectangle(0,240,0,320,249,249,249);
+            tft_set_cursor_pos(20,160);
+            tft_setfg(0,0,0);
+            tft_setbg(249,249,249);
+            tft_puts("Please wait...");
+
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+            /* nothing to do */
+#else
+# error "input mode must be set"
+#endif
+
+
+        /********************************************************
          * send back the pin & pin len values to smart
          *******************************************************/
         
@@ -195,7 +217,7 @@ static int handle_pin(char *pin, uint8_t pin_len, t_pin_mode mode)
             tft_set_cursor_pos(20,160);
             tft_setfg(0,0,0);
             tft_setbg(249,249,249);
-            tft_puts("Please wait...");
+            tft_puts("Pin ok !...");
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
             /* nothing to do */
