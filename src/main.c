@@ -39,7 +39,7 @@
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
-static uint8_t id_smart;
+uint8_t id_smart;
 
 #define PIN_LENGTH CONFIG_APP_PIN_MAX_PIN_LENGTH
 
@@ -125,7 +125,6 @@ static int handle_pin(char *pin, uint8_t pin_len, t_pin_mode mode)
         console_log("pin registered!\n");
         console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-        pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
 
         if (mode == PIN_MODE_PETPIN) {
             get_pin(" Pet Pin Code ", 14, 0,240,60,320,pin,pin_len);
@@ -133,7 +132,6 @@ static int handle_pin(char *pin, uint8_t pin_len, t_pin_mode mode)
             get_pin(" User Pin Code", 14, 0,240,60,320,pin,pin_len);
         }
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-        pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
         memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
 #else
 # error "input type must be set"
@@ -294,6 +292,69 @@ err:
 }
 
 
+uint8_t handle_authentication_phase(void)
+{
+    uint8_t pin_len;
+
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+    char pin[PIN_MAX_LEN + 1] = { 0 };
+    pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
+#elif CONFIG_APP_PIN_INPUT_USART
+    char * pin = 0;
+    pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    char pin[PIN_MAX_LEN + 1] = { 0 };
+    pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
+#endif
+
+    /*
+     * First handle Pet Pin. This permit to decrypt
+     * the authentication keys held in the firmware
+     * using the Pet pin given by the user, in
+     * interaction with the smartcard (this permit
+     * authentication keys confidentiality in case
+     * of firmware dumping from flash).
+     */
+    if (handle_pin(pin, pin_len, PIN_MODE_PETPIN)) {
+        printf("Error while handling Pet Pin !\n");
+        goto err;
+    };
+
+    /*
+     * now that a vaild pet pin has been received, we request the pet name from
+     * smart, to show it to the user. This pet name must be validated by the user
+     * This protect against malicious board replacement,
+     * to ensure that the pet pin has been validated
+     * by the smartcard before continuing. The pet
+     * name must be the one set previously by the
+     * user.
+     */
+    if (handle_petname()) {
+        printf("Error while handling Pet name !\n");
+        goto err;
+    };
+
+    /*
+     * Then handle the user Pin. This permit to decrypt
+     * the symetric key used to (en|de)crypt the mass-storage
+     * content. The Pin is used to authenticate the
+     * user. It is not the same as the pet name as
+     * the user pin is sent encrypted to the smartcard
+     * as a mutual authenticated channel is mounted. The
+     * pet pin has been sent, for the first communication
+     * part, unencrypted to the smartcard an can then be
+     * spied through the communication bus.
+     */
+    if (handle_pin(pin, pin_len, PIN_MODE_USERPIN)) {
+        printf("Error while handling User Pin !\n");
+        goto err;
+    };
+
+    return 0;
+err:
+    return 1;
+}
+
 /******************************************************
  * The task main function, called by do_starttask().
  * This is the user application code entrypoint after
@@ -382,8 +443,6 @@ int _main(uint32_t task_id)
      *******************************************/
 
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
-    char pin[PIN_MAX_LEN + 1] = { 0 };
-
     if (tft_init()) {
         printf("error during TFT initialization!\n");
     }
@@ -405,8 +464,6 @@ int _main(uint32_t task_id)
      * in the specific case of usart, the readline() function allocate
      * the string. The pin variable is then not a table but a string pointer
      */
-    char * pin = 0;
-
     shell_init();
     if (ret == 0) {
         printf("USART4 is now configured !\n");
@@ -416,7 +473,6 @@ int _main(uint32_t task_id)
     console_log("[USART4] Pin initialized usart...\n");
     console_flush();
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-    char pin[PIN_MAX_LEN + 1] = { 0 };
     /* nothing to do */
 #else
 # error "input type must be set"
@@ -462,50 +518,9 @@ int _main(uint32_t task_id)
      * Starting authentication phase
      *******************************************/
     
-    uint8_t pin_len;
-
-    /*
-     * First handle Pet Pin. This permit to decrypt
-     * the authentication keys held in the firmware
-     * using the Pet pin given by the user, in
-     * interaction with the smartcard (this permit
-     * authentication keys confidentiality in case
-     * of firmware dumping from flash).
-     */
-    if (handle_pin(pin, pin_len, PIN_MODE_PETPIN)) {
-        printf("Error while handling Pet Pin !\n");
+    if (handle_authentication_phase()) {
         goto err;
-    };
-
-    /*
-     * now that a vaild pet pin has been received, we request the pet name from
-     * smart, to show it to the user. This pet name must be validated by the user
-     * This protect against malicious board replacement,
-     * to ensure that the pet pin has been validated
-     * by the smartcard before continuing. The pet
-     * name must be the one set previously by the
-     * user.
-     */
-    if (handle_petname()) {
-        printf("Error while handling Pet name !\n");
-        goto err;
-    };
-
-    /*
-     * Then handle the user Pin. This permit to decrypt
-     * the symetric key used to (en|de)crypt the mass-storage
-     * content. The Pin is used to authenticate the
-     * user. It is not the same as the pet name as
-     * the user pin is sent encrypted to the smartcard
-     * as a mutual authenticated channel is mounted. The
-     * pet pin has been sent, for the first communication
-     * part, unencrypted to the smartcard an can then be
-     * spied through the communication bus.
-     */
-    if (handle_pin(pin, pin_len, PIN_MODE_USERPIN)) {
-        printf("Error while handling User Pin !\n");
-        goto err;
-    };
+    }
 
 
     /*************************************************************

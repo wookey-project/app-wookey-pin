@@ -5,10 +5,12 @@
 #include "api/print.h"
 #include "api/types.h"
 #include "api/syscall.h"
+#include "ipc_proto.h"
 #include "libtouch.h"
 //#include "bg.h"
 #include "rtc.h"
 #include "pin.h"
+#include "main.h"
 
 // images
 #include "img/smiley.h"
@@ -27,6 +29,7 @@
 extern const int font_width;
 extern const int font_height;
 extern const int font_blankskip;
+extern uint8_t id_smart;
 
 static const struct {
   uint8_t r;
@@ -103,7 +106,7 @@ t_box get_box(int x, int y)
                 box = BOX_SET_PETNAME;
             }
             if (x > 0 && x < 240 && y > 180 && y < 270) {
-                box = BOX_WIPE_STORAGE;
+                box = BOX_SET_USERPIN;
             }
             if (x > 0 && x < 240 && y > 270 && y < 320) {
                 box = BOX_RETURN;
@@ -119,7 +122,7 @@ t_box get_box(int x, int y)
                 box = BOX_WIPE_SMARTCARD;
             }
             if (x > 0 && x < 240 && y > 180 && y < 270) {
-                box = BOX_SET_USERPIN;
+                box = BOX_WIPE_STORAGE;
             }
             if (x > 0 && x < 240 && y > 270 && y < 320) {
                 box = BOX_RETURN;
@@ -360,6 +363,10 @@ void menu_get_events(void)
     char userpin_val[17] = { 0 };
     uint32_t userpin_len = 16;
 
+    struct sync_command_data      ipc_sync_cmd = { 0 };
+    logsize_t size;
+    uint8_t ret;
+
     t_current_menu nextmenu = menu;
 
     while(1)
@@ -403,7 +410,7 @@ void menu_get_events(void)
             //touch_refresh_pos();
             posy=touch_getx();
             posx=touch_gety();
-            printf("[touched] get pos: x:%d, y:%d\n", posx, posy);
+            //printf("[touched] get pos: x:%d, y:%d\n", posx, posy);
 
             t_box box = get_box(posx, posy); 
 
@@ -430,24 +437,118 @@ void menu_get_events(void)
                     {
                         printf("[touched] box set petpin pushed !\n");
                         memset(petpin_val, 0x0, 17);
-                        get_pin(" Pet Pin Code ", 14, 0,240,60,320,petpin_val,petpin_len);
+
+
+                        /* inform SMART that an authentication phase is requested */
+                        ipc_sync_cmd.magic = MAGIC_CRYPTO_AUTH_CMD;
+                        ipc_sync_cmd.state = SYNC_WAIT;
+                        size = sizeof(struct sync_command);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+
+                        /* handle the authentication phase with smart */
+                        if (handle_authentication_phase()) {
+                            printf("fail to handle authentication ! leaving...\n");
+                            continue;
+                        }
+
+                        /* get the new PIN */
+                        get_pin(" new Pet Pin  ", 14, 0,240,60,320,petpin_val,petpin_len);
                         printf("pet pin is: %s, len: %d\n", petpin_val, strlen(petpin_val));
+
+                        /* sending new pin to smart */
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PETPIN;
+                        ipc_sync_cmd.state = SYNC_DONE;
+                        ipc_sync_cmd.data_size = strlen(petpin_val);
+                        memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
+                        memcpy((void*)ipc_sync_cmd.data.u8, petpin_val, strlen(petpin_val));
+                        size = sizeof(struct sync_command_data);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+
+
                         break;
                     }
                 case BOX_SET_PETNAME:
                     {
                         printf("[touched] box set petname pushed !\n");
                         memset(petpin_val, 0x0, 33);
+
+                        /* inform SMART that an authentication phase is requested */
+                        ipc_sync_cmd.magic = MAGIC_CRYPTO_AUTH_CMD;
+                        ipc_sync_cmd.state = SYNC_WAIT;
+                        size = sizeof(struct sync_command);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+
+                        /* handle the authentication phase with smart */
+                        if (handle_authentication_phase()) {
+                            printf("fail to handle authentication ! leaving...\n");
+                            continue;
+                        }
+
                         get_txt_pad(" your pet name  ", 16, 0,240,60,320,petname_val,petname_len);
                         printf("pet name is: %s, len: %d\n", petname_val, strlen(petname_val));
+
+                        /* sending new pet name to smart */
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PETNAME;
+                        ipc_sync_cmd.state = SYNC_DONE;
+                        ipc_sync_cmd.data_size = strlen(petname_val);
+                        memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
+                        memcpy((void*)ipc_sync_cmd.data.u8, petpin_val, strlen(petname_val));
+                        size = sizeof(struct sync_command_data);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+
                         break;
                     }
                 case BOX_SET_USERPIN:
                     {
                         printf("[touched] box set userpin pushed !\n");
                         memset(userpin_val, 0x0, 17);
+
+                        /* inform SMART that an authentication phase is requested */
+                        ipc_sync_cmd.magic = MAGIC_CRYPTO_AUTH_CMD;
+                        ipc_sync_cmd.state = SYNC_WAIT;
+                        size = sizeof(struct sync_command);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+
+                        /* handle the authentication phase with smart */
+                        if (handle_authentication_phase()) {
+                            printf("fail to handle authentication ! leaving...\n");
+                            continue;
+                        }
+
+                        /* get the new PIN */
                         get_pin(" User PIn Code", 14, 0,240,60,320,userpin_val,userpin_len);
                         printf("user pin is: %s, len: %d\n", userpin_val, strlen(userpin_val));
+
+                        /* sending new pin to smart */
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_USERPIN;
+                        ipc_sync_cmd.state = SYNC_DONE;
+                        ipc_sync_cmd.data_size = strlen(userpin_val);
+                        memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
+                        memcpy((void*)ipc_sync_cmd.data.u8, userpin_val, strlen(userpin_val));
+                        size = sizeof(struct sync_command_data);
+
+                        do {
+                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+                        } while (ret != SYS_E_DONE);
+
+                        /* waiting for acknowledge */
+                        // FIXME to add
+
                         break;
                     }
 
