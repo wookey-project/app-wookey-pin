@@ -530,8 +530,6 @@ int _main(uint32_t task_id)
      * events. This is the pin task main loop, managing all
      * user interactions on screen
      */
-    draw_background();
-    draw_menu(240,320, true);
 
     menu_get_events();
     /* should return to do_endoftask() */

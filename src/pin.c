@@ -133,11 +133,9 @@ void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
                 25,25,255);
   tft_setfg(0,0,0);
   tft_setbg(25,25,255);
-  tft_set_cursor_pos((x2-hspace+(x2-hspace-60)/2),
-      y1+i*vspace+(i)*vsize+vsize/2-font_height/4+font_blankskip/4);
+  tft_set_cursor_pos(x2-hspace-58+29-char_width-char_width/2,
+          y1+28-font_height/4+font_blankskip/4);
   tft_puts("Ok");	
-
-
 }
 
 void pin_draw_case(int x1,int x2, int y1, int y2, char *c, 
@@ -485,6 +483,11 @@ void get_txt_pad(const char *title,
               y1+lasty*vspace+lasty*vsize+vsize-2,key);
         }
       }
+      if (colx > x2 - 60 && colx < x2 &&
+              coly > y1 && coly < y1 + 58) { // is okay button ?
+          return;
+
+      }
       //Is touch currently out of range
       if( colx==-1 || coly==-1)
       {	
@@ -505,8 +508,9 @@ void get_txt_pad(const char *title,
     }
     //Validation at th last position
     //Were we out of the scope ? Then do nothing
-    if(lastcase<0) 
-      continue;
+    if(lastcase<0) {
+        continue;
+    }
     //Otherwise redraw last case as normal
     pin_normal_case(x1+lastx*hspace+lastx*hsize+2,
 	x1+lastx*hspace+lastx*hsize+hsize-2,

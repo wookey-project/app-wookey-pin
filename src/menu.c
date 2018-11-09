@@ -6,28 +6,27 @@
 #include "api/types.h"
 #include "api/syscall.h"
 #include "libtouch.h"
-#include "bg.h"
+//#include "bg.h"
 #include "rtc.h"
 #include "pin.h"
+
+// images
+#include "img/smiley.h"
+#include "img/settings.h"
+#include "img/wipe.h"
+#include "img/lock.h"
+#include "img/unlock.h"
+#include "img/state.h"
+#include "img/pin.h"
+#include "img/petpin.h"
+#include "img/petname.h"
+#include "img/return.h"
+#include "img/massstorage.h"
+#include "img/smartcard.h"
 
 extern const int font_width;
 extern const int font_height;
 extern const int font_blankskip;
-
-/*
- * x & y are screen width & height
- */
-void draw_menu(int x, int y, bool horizontal)
-{
-  /* menu background */
-  if (horizontal) {
-      tft_fill_rectangle(0,x,0,32,0,0,0);
-  } else {
-      tft_fill_rectangle(0,32,0,y,0,0,0);
-  }
-  /* menu button */
-  menu_draw_button(false);
-}
 
 static const struct {
   uint8_t r;
@@ -38,6 +37,243 @@ static const struct {
   { 132, 194, 74 },
   { 191, 121, 183 }
 };
+
+extern const int font_width;
+extern const int font_height;
+extern const int font_blankskip;
+
+
+typedef enum {
+    BOX_STATUS,
+    BOX_SETTINGS,
+    BOX_WIPE,
+    BOX_LOCK,
+    BOX_UNLOCK,
+    BOX_STATE,
+    BOX_SET_PETPIN,
+    BOX_SET_PETNAME,
+    BOX_SET_USERPIN,
+    BOX_WIPE_AUTHKEYS,
+    BOX_WIPE_SMARTCARD,
+    BOX_WIPE_STORAGE,
+    BOX_RETURN,
+    BOX_UNDEFINED
+} t_box;
+
+typedef enum {
+    MENU_MAIN     = 0,
+    MENU_SETTINGS = 1,
+    MENU_WIPE     = 2
+} t_current_menu;
+
+static volatile t_current_menu menu = MENU_MAIN;
+
+t_box get_box(int x, int y)
+{
+    t_box box = BOX_UNDEFINED;
+    switch (menu) {
+        case MENU_MAIN:
+        {
+            if (x > 0 && x < 120 && y > 0 && y < 200) {
+                box = BOX_STATUS;
+            }
+            if (x > 120 && x < 240 && y > 0 && y < 100) {
+                box = BOX_SETTINGS;
+            }
+            if (x > 120 && x < 240 && y > 100 && y < 200) {
+                box = BOX_WIPE;
+            }
+            if (x > 0 && x < 80 && y > 200 && y < 300) {
+                box = BOX_LOCK;
+            }
+            if (x > 80 && x < 160 && y > 200 && y < 300) {
+                box = BOX_UNLOCK;
+            }
+            if (x > 160 && x < 240 && y > 200 && y < 300) {
+                box = BOX_STATE;
+            }
+            break;
+        }
+        case MENU_SETTINGS:
+        {
+            if (x > 0 && x < 240 && y > 0 && y < 90) {
+                box = BOX_SET_PETPIN;
+            }
+            if (x > 0 && x < 240 && y > 90 && y < 180) {
+                box = BOX_SET_PETNAME;
+            }
+            if (x > 0 && x < 240 && y > 180 && y < 270) {
+                box = BOX_WIPE_STORAGE;
+            }
+            if (x > 0 && x < 240 && y > 270 && y < 320) {
+                box = BOX_RETURN;
+            }
+            break;
+        }
+        case MENU_WIPE:
+        {
+            if (x > 0 && x < 240 && y > 0 && y < 90) {
+                box = BOX_WIPE_AUTHKEYS;
+            }
+            if (x > 0 && x < 240 && y > 90 && y < 180) {
+                box = BOX_WIPE_SMARTCARD;
+            }
+            if (x > 0 && x < 240 && y > 180 && y < 270) {
+                box = BOX_SET_USERPIN;
+            }
+            if (x > 0 && x < 240 && y > 270 && y < 320) {
+                box = BOX_RETURN;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+    return box;
+}
+
+void draw_menubox2(int x1, int x2, int y1, int y2,
+                   char *c,
+                   uint8_t r, uint8_t g, uint8_t b,
+                   const uint8_t *icon_colormap,
+                   const uint8_t *icon,
+                   const uint32_t icon_size)
+{
+  const int char_width=font_width/128;
+  int posx;
+  // create the box color
+  tft_fill_rectangle(x1,x2,y1,y2,0,0,0);
+  tft_fill_rectangle(x1+2,x2-2,y1+2,y2-2,r,g,b);
+  // add the box icon
+  tft_rle_image(x1 + (((x2 - x1)-45)/2),
+                y1 + (((y2 - y1)-45)/2), 45, 45,
+          icon_colormap, icon, icon_size);
+  // add the box title
+  //
+  if (c) {
+      posx=(x2-x1-strlen(c)*char_width)/2;
+      tft_set_cursor_pos(x1+posx,(y1 + (((y2 - y1)-45)/2 + 48)));
+      tft_setfg(255,255,255);
+      tft_setbg(r,g,b);
+      tft_puts(c);
+  }
+}
+
+void draw_menu(int x, int y)
+{
+    x = x;
+    y = y;
+  
+    draw_background();
+    switch (menu) {
+        case MENU_MAIN:
+        {
+            draw_menubox2(0,120,0,200,
+                    "status\0",
+                    53,88,157,
+                    smiley_colormap,
+                    smiley,
+                    sizeof(smiley));
+            draw_menubox2(120,240,0,100,
+                    "setting\0",
+                    0,159,155,
+                    settings_colormap,
+                    settings,
+                    sizeof(settings));
+            draw_menubox2(120,240,100,200,
+                    "wipe\0",
+                    231,92,76,
+                    wipe_colormap,
+                    wipe,
+                    sizeof(wipe));
+            draw_menubox2(0,80,200,300,
+                    "lck\0",
+                    141,78,159,
+                    nlock_colormap,
+                    nlock,
+                    sizeof(nlock));
+            draw_menubox2(80,160,200,300,
+                    "unlck\0",
+                    141,78,159,
+                    unlock_colormap,
+                    unlock,
+                    sizeof(unlock));
+            draw_menubox2(160,240,200,300,
+                    "state\0",
+                    49,173,89,
+                    state_colormap,
+                    state,
+                    sizeof(state));
+            break;
+        }
+        case MENU_SETTINGS:
+        {
+            draw_menubox2(0,240,0,90,
+                    "set pet pin\0",
+                    0,159,155,
+                    petpin_colormap,
+                    petpin,
+                    sizeof(petpin));
+            draw_menubox2(0,240,90,180,
+                    "set pet name\0",
+                    0,159,155,
+                    petname_colormap,
+                    petname,
+                    sizeof(petname));
+            draw_menubox2(0,240,180,270,
+                    "set user pin\0",
+                    0,159,155,
+                    userpin_colormap,
+                    userpin,
+                    sizeof(userpin));
+            draw_menubox2(0,240,270,320,
+                    0,
+                    133,135,132,
+                    returning_colormap,
+                    returning,
+                    sizeof(returning));
+            break;
+
+        }
+        case MENU_WIPE:
+        {
+            draw_menubox2(0,240,0,90,
+                    "Wipe auth keys\0",
+                    231,92,76,
+                    wipe_colormap,
+                    wipe,
+                    sizeof(wipe));
+            draw_menubox2(0,240,90,180,
+                    "Wipe smartcard\0",
+                    231,92,76,
+                    smartcard_colormap,
+                    smartcard,
+                    sizeof(smartcard));
+            draw_menubox2(0,240,180,270,
+                    "Wipe massstorage\0",
+                    231,92,76,
+                    massstorage_colormap,
+                    massstorage,
+                    sizeof(massstorage));
+            draw_menubox2(0,240,270,320,
+                    0,
+                    133,135,132,
+                    returning_colormap,
+                    returning,
+                    sizeof(returning));
+            break;
+
+        }
+        default: {
+            break;
+        }
+    }
+
+}
+
 
 void draw_menubox(int x1,int x2, int y1, int y2, char *c, uint8_t i)
 {
@@ -61,38 +297,11 @@ void draw_menubox(int x1,int x2, int y1, int y2, char *c, uint8_t i)
 }
 
 
-/*
- * draw as many items as required as an openeded menu list
- */
-void draw_menulist(int x, int y, uint8_t size, ...)
-{
-    va_list args;
-    char    *menu_names[10];
-    uint8_t cury = y;
-    x = x;
-
-    if (size > 10) {
-        size = 10;
-    }
-
-    va_start(args, size);
-    for (uint8_t i = 0; i < size; ++i) {
-        menu_names[i] = va_arg(args, char*);
-        draw_menubox(0, 240, cury, cury+80, menu_names[i], i);
-        cury += 80;
-    }
-    va_end(args);
-}
-
 void draw_background(void)
 {
-
-    /* background color homogeneous with bg image */
-    tft_fill_rectangle(0,240,0,340,54,36,99);
-    tft_rle_image(0,34,bg_width,bg_height,bg_colormap,bg,sizeof(bg));
+    tft_fill_rectangle(0,240,0,340,0,0,0);
 }
 
-static bool menu_opened = false;
 
 bool menu_is_touched(int posx, int posy)
 {
@@ -129,10 +338,10 @@ void menu_draw_button(bool invert)
   }
 }
 
-void unroll_menulist(uint32_t x, uint32_t y, uint8_t size)
-{
-    tft_rle_image(x,y,bg_width,((80+1)*size),bg_colormap,bg,sizeof(bg));
-}
+//void unroll_menulist(uint32_t x, uint32_t y, uint8_t size)
+//{
+//    tft_rle_image(x,y,bg_width,((80+1)*size),bg_colormap,bg,sizeof(bg));
+//}
 
 extern uint32_t numexti;
 
@@ -140,65 +349,114 @@ extern uint32_t numexti;
 
 void menu_get_events(void)
 {
-  uint64_t ts = 0;
-  char *timestamp = 0;
-  char petname[MAX_PETNAME_LEN] = { 0 };
-  uint8_t petname_len = CONFIG_APP_PIN_MAX_PETNAME_LEN;
-  while(1)
-  {
-    touch_read_X_DFR();/* Ensures that PenIRQ is enabled */
-    /*
-     * Between touch_read_X_DFR and touch_is_touched, we need to wait a little
-     * or touch_is_touched() will return an invalid value
-     */
-    sys_sleep(10, SLEEP_MODE_INTERRUPTIBLE);
+    // initial menu draw
 
-    /* Wait loop for touchscreen to be touched */
-    while(!(touch_is_touched())) {
-        touch_enable_exti();
-        /* Here we sleep for 1 second in order to print the
-         * current timestamp on the menubar every second
-         * We can be interrupted by the touchscreen if needed
-         */
-        sys_sleep(1000, SLEEP_MODE_INTERRUPTIBLE);
-        sys_get_systick(&ts, PREC_MILLI);
-        timestamp = get_timestamp((uint32_t)(ts / 1000));
-        tft_set_cursor_pos(115,295);
-        tft_setfg(235,235,235);
-        tft_setbg(54,36,99);
-        tft_puts(timestamp);
-    }
-    //Refresh the actual positions
-    touch_refresh_pos();
-    //Follow the motion on the screen
-    while (touch_refresh_pos(),touch_is_touched())
+    char petname_val[33] = { 0 };
+    uint32_t petname_len = 32;
+
+    char petpin_val[17] = { 0 };
+    uint32_t petpin_len = 16;
+
+    char userpin_val[17] = { 0 };
+    uint32_t userpin_len = 16;
+
+    t_current_menu nextmenu = menu;
+
+    while(1)
     {
-        int posx,posy;
-        //touch_refresh_pos();
-        posy=touch_getx();
-        posx=touch_gety();
+        draw_menu(240,320);
+        touch_read_X_DFR();/* Ensures that PenIRQ is enabled */
+        /*
+         * Between touch_read_X_DFR and touch_is_touched, we need to wait a little
+         * or touch_is_touched() will return an invalid value
+         */
+        sys_sleep(10, SLEEP_MODE_INTERRUPTIBLE);
 
-        //menu_draw_button(!menu_opened);
-        if (menu_is_touched(posx, posy) && menu_opened == false) {
-            // menu button pushed
-            menu_draw_button(true);
-            draw_menulist(10,34, 3, "config", "state", "lock");
-            menu_opened = true;
-        } else if (!menu_is_touched(posx, posy)) {
-          // unroll because the user touched other part of the screen
-          if (menu_opened) {
-            menu_draw_button(false);
-            //unroll_menulist(0,34, 4);
-            get_txt_pad("   new string   ", 16, 0,240,60,320,petname,petname_len);
-            menu_opened = false;
-          }
-        } else if (menu_is_touched(posx,posy) && menu_opened) {
-            // unroll by button push request
-            menu_draw_button(false);
-            unroll_menulist(0,34, 4);
-            menu_opened = false;
+        /* Wait loop for touchscreen to be touched */
+        while (!(touch_refresh_pos(),touch_is_touched())) {
+            touch_enable_exti();
+            if (menu == MENU_MAIN) {
+                //printf("[not touched] main menu\n");
+                uint64_t ts = 0;
+                char *timestamp = 0;
+                /* Here we sleep for 1 second in order to print the
+                 * current timestamp on the menubar every second
+                 * We can be interrupted by the touchscreen if needed
+                 */
+                sys_sleep(1000, SLEEP_MODE_INTERRUPTIBLE);
+                //printf("[not touched] print timestamp\n");
+                sys_get_systick(&ts, PREC_MILLI);
+                timestamp = get_timestamp((uint32_t)(ts / 1000));
+                tft_set_cursor_pos(0,170);
+                tft_setfg(235,235,235);
+                tft_setbg(53,88,157);
+                tft_puts(timestamp);
+            } else {
+                sys_yield();
+            }
         }
+        //Follow the motion on the screen
+        while (touch_refresh_pos(),touch_is_touched())
+        {
+
+            int posx,posy;
+            //touch_refresh_pos();
+            posy=touch_getx();
+            posx=touch_gety();
+            printf("[touched] get pos: x:%d, y:%d\n", posx, posy);
+
+            t_box box = get_box(posx, posy); 
+
+            switch (box) {
+                case BOX_SETTINGS:
+                    {
+                        printf("[touched] box settings pushed !\n");
+                        nextmenu = MENU_SETTINGS;
+                        break;
+                    }
+                case BOX_WIPE:
+                    {
+                        printf("[touched] box wipe pushed !\n");
+                        nextmenu = MENU_WIPE;
+                        break;
+                    }
+                case BOX_RETURN:
+                    {
+                        printf("[touched] box return pushed !\n");
+                        nextmenu = MENU_MAIN;
+                        break;
+                    }
+                case BOX_SET_PETPIN:
+                    {
+                        printf("[touched] box set petpin pushed !\n");
+                        memset(petpin_val, 0x0, 17);
+                        get_pin(" Pet Pin Code ", 14, 0,240,60,320,petpin_val,petpin_len);
+                        printf("pet pin is: %s, len: %d\n", petpin_val, strlen(petpin_val));
+                        break;
+                    }
+                case BOX_SET_PETNAME:
+                    {
+                        printf("[touched] box set petname pushed !\n");
+                        memset(petpin_val, 0x0, 33);
+                        get_txt_pad(" your pet name  ", 16, 0,240,60,320,petname_val,petname_len);
+                        printf("pet name is: %s, len: %d\n", petname_val, strlen(petname_val));
+                        break;
+                    }
+                case BOX_SET_USERPIN:
+                    {
+                        printf("[touched] box set userpin pushed !\n");
+                        memset(userpin_val, 0x0, 17);
+                        get_pin(" User PIn Code", 14, 0,240,60,320,userpin_val,userpin_len);
+                        printf("user pin is: %s, len: %d\n", userpin_val, strlen(userpin_val));
+                        break;
+                    }
+
+                default:
+                    {
+                        break;
+                    }
+            }
+        }
+        menu = nextmenu;
     }
-    //menu_opened = !menu_opened;
-  }
 }

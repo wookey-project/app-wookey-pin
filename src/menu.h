@@ -4,7 +4,7 @@
 #include "api/types.h"
 #include <stdarg.h>
 
-void draw_menu(int x, int y, bool horizontal);
+void draw_menu(int x, int y);
 
 void draw_menulist(int x, int y, uint8_t size, ...);
 
