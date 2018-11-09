@@ -493,7 +493,7 @@ void menu_get_events(void)
                             continue;
                         }
 
-                        get_txt_pad(" your pet name  ", 16, 0,240,60,320,petname_val,petname_len);
+                        get_txt_pad("  new Pet Name  ", 16, 0,240,60,320,petname_val,petname_len);
                         printf("pet name is: %s, len: %d\n", petname_val, strlen(petname_val));
 
                         /* sending new pet name to smart */
@@ -531,7 +531,7 @@ void menu_get_events(void)
                         }
 
                         /* get the new PIN */
-                        get_pin(" User PIn Code", 14, 0,240,60,320,userpin_val,userpin_len);
+                        get_pin(" new User Pin ", 14, 0,240,60,320,userpin_val,userpin_len);
                         printf("user pin is: %s, len: %d\n", userpin_val, strlen(userpin_val));
 
                         /* sending new pin to smart */
