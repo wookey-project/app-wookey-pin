@@ -25,5 +25,5 @@ extern const int font_height;
 extern char pin[4];
 extern unsigned char nbpin;
 
-uint8_t get_petname_validation(char *petname, uint8_t pet_name_len);
+uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len);
 #endif

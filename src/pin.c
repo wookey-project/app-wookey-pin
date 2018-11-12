@@ -91,7 +91,7 @@ void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
   {
     for(j=0;j<3;j++)
     {
-	tft_set_cursor_pos(x1+hspace*j+hsize*j+hsize/2-mystrlen(keys[k])*char_width/2,
+	tft_set_cursor_pos(x1+hspace*j+hsize*j+hsize/2-strlen(keys[k])*char_width/2,
 		y1+i*vspace+(i)*vsize+vsize/2-font_height/4+font_blankskip/4);
     	//tft_puts(keys[k++]);
     	tft_putc(TXT_KEY_BASE + (offset * 10) + k++);	
@@ -138,10 +138,10 @@ void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
   tft_puts("Ok");	
 }
 
-void pin_draw_case(int x1,int x2, int y1, int y2, char *c, 
+void pin_draw_case(int x1,int x2, int y1, int y2, const char *c, 
 			uint8_t r, uint8_t g, uint8_t b);
 
-uint8_t get_petname_validation(char *petname, uint8_t pet_name_len)
+uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len)
 {
     pet_name_len = pet_name_len;
   tft_setfg(200,200,200);
@@ -252,7 +252,7 @@ void draw_pin(int x1,int x2, int y1, int y2)
   {
     for(j=0;j<3;j++)
     {
-	tft_set_cursor_pos(x1+hspace*j+hsize*j+hsize/2-mystrlen(keys[k])*char_width/2,
+	tft_set_cursor_pos(x1+hspace*j+hsize*j+hsize/2-strlen(keys[k])*char_width/2,
 		y1+i*vspace+(i)*vsize+vsize/2-font_height/4+font_blankskip/4);
     	tft_puts(keys[k++]);	
     }
@@ -353,7 +353,7 @@ void pin_redraw_text_footer(const char nb_given, const char *str, t_draw_mode mo
   }
 }
 
-void pin_draw_case(int x1,int x2, int y1, int y2, char *c, 
+void pin_draw_case(int x1,int x2, int y1, int y2, const char *c, 
 			uint8_t r, uint8_t g, uint8_t b)
 {
   const int char_width=font_width/128;
@@ -361,10 +361,10 @@ void pin_draw_case(int x1,int x2, int y1, int y2, char *c,
   tft_setbg(r,g,b);
   //tft_setfg(0,0,0);
   tft_fill_rectangle(x1,x2,y1,y2,r,g,b);
-  posx=(x2-x1-mystrlen(c)*char_width)/2;
+  posx=(x2-x1-strlen(c)*char_width)/2;
   posy=(y2-y1-font_height/2)/2;
   tft_set_cursor_pos(x1+posx,posy+y1);
-  tft_puts(c);
+  tft_puts((char*)c);
 }
 void pin_normal_case(int x1,int x2, int y1, int y2, char *c)
 {

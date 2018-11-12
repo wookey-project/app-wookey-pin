@@ -32,8 +32,9 @@
 
 #include "libshell.h"
 #include "ipc_proto.h"
+#include "main.h"
 
-#define PIN_DEBUG 0
+#define PIN_DEBUG 1
 
 
 #define PIN_MAX_LEN      16
@@ -56,265 +57,14 @@ void cb_usart_irq(uint32_t sr, uint32_t dr)
  * IPC Communication protocol, basics
  ***********************************/
 
-typedef enum {
-    PIN_MODE_PETPIN,
-    PIN_MODE_USERPIN
-} t_pin_mode;
-
 
 /******************************************************************
  * Handle a PIN request from smart, including :
- * - Pin request
- * - Pin response
- * - Pin acknowledge
- * The function loop on the pin request while the pin is not valid
- * which is not a problem as the max pintries is managed by smart
- * while pin will wait for the next pin round.
+ * - Pin request to user (usart, graphical, mockup)
+ * - Pin response to smart
+ * - Pin acknowledge from smart
  *****************************************************************/
-static int handle_pin(char *pin, uint8_t pin_len, t_pin_mode mode)
-{
-    bool valid_pin = false;
-    uint8_t id;
-    uint8_t ret;
-    logsize_t size = 0;
-
-    struct sync_command      ipc_sync_cmd;
-    struct sync_command_data ipc_sync_cmd_data;
-
-    id = id_smart;
-    size = sizeof(struct sync_command);
-
-    do {
-        valid_pin = false;
-
-        /********************************************************
-         * First wait for the PIN request from SMART
-         *******************************************************/
-
-        sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
-
-
-        /* sanitation */
-        if ((mode == PIN_MODE_PETPIN && ipc_sync_cmd.magic != MAGIC_CRYPTO_PETPIN_CMD) ||
-            (mode == PIN_MODE_USERPIN && ipc_sync_cmd.magic != MAGIC_CRYPTO_PIN_CMD))
-        {
-            goto err;
-        }
-
-
-        /********************************************************
-        * ask the user for pin, or get mockup value instead
-         *******************************************************/
-
-#if PIN_DEBUG
-        if (mode == PIN_MODE_PETPIN) {
-            printf("smart is asking for Pet pin, asking user...\n");
-        } else if(mode == PIN_MODE_USERPIN)  {
-            printf("smart is asking for User pin, asking user...\n");
-        } 
-#endif
-
-#ifdef CONFIG_APP_PIN_INPUT_USART
-        if (mode == PIN_MODE_PETPIN) {
-            console_log("Enter pet pin code please\n");
-        } else if(mode == PIN_MODE_USERPIN)  {
-            console_log("Enter user pin code please\n");
-        } 
-        console_flush();
-        shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
-        console_log("pin registered!\n");
-        console_flush();
-#elif CONFIG_APP_PIN_INPUT_SCREEN
-
-        if (mode == PIN_MODE_PETPIN) {
-            get_pin(" Pet Pin Code ", 14, 0,240,60,320,pin,pin_len);
-        } else if(mode == PIN_MODE_USERPIN)  {
-            get_pin(" User Pin Code", 14, 0,240,60,320,pin,pin_len);
-        }
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
-        memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
-#else
-# error "input type must be set"
-#endif
-
-
-        /********************************************************
-         * before sending the pin to smart and wait for ack,
-         * print a 'wait message', as smart takes some time
-         * to check and initiate the secure channel
-         *******************************************************/
-#ifdef CONFIG_APP_PIN_INPUT_USART
-            console_log("Please wait...\n");
-            console_flush();
-#elif CONFIG_APP_PIN_INPUT_SCREEN
-            tft_fill_rectangle(0,240,0,320,249,249,249);
-            tft_set_cursor_pos(20,160);
-            tft_setfg(0,0,0);
-            tft_setbg(249,249,249);
-            tft_puts("Please wait...");
-
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
-            /* nothing to do */
-#else
-# error "input mode must be set"
-#endif
-
-
-        /********************************************************
-         * send back the pin & pin len values to smart
-         *******************************************************/
-        
-        if (mode == PIN_MODE_PETPIN) {
-            ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PETPIN_RESP;
-        } else if(mode == PIN_MODE_USERPIN)  {
-            ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
-        } else {
-            /* defaulting... */
-            ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
-        }
-        ipc_sync_cmd_data.state = SYNC_DONE;
-        ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
-        memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
-        memcpy(&ipc_sync_cmd_data.data.u8, pin, pin_len);
-
-        do {
-            size = sizeof(struct sync_command_data);
-            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
-        } while (ret != SYS_E_DONE);
-
-#if PIN_DEBUG
-        if (mode == PIN_MODE_PETPIN) {
-            printf("Pet Pin sent to smart\n");
-        } else if(mode == PIN_MODE_USERPIN)  {
-            printf("User Pin sent to smart\n");
-        }
-#endif
-
-
-        /********************************************************
-         * waiting for smart acknowledgement for the PIN sent
-         *******************************************************/
-
-        id = id_smart;
-        size = sizeof(struct sync_command);
-        sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
-
-
-        /********************************************************
-         * Depending on what SMART said, indicate the current status
-         *******************************************************/
-
-        if ((ipc_sync_cmd.magic == MAGIC_CRYPTO_PETPIN_RESP && ipc_sync_cmd.state == SYNC_DONE) ||
-           (ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd.state == SYNC_DONE))
-        {
-            printf("Pin has been acknowledge by SMART\n");
-            valid_pin = true;
-#ifdef CONFIG_APP_PIN_INPUT_USART
-            console_log("valid PIN, continuing...\n");
-            console_flush();
-#elif CONFIG_APP_PIN_INPUT_SCREEN
-            tft_fill_rectangle(0,240,0,320,249,249,249);
-            tft_set_cursor_pos(20,160);
-            tft_setfg(0,0,0);
-            tft_setbg(249,249,249);
-            tft_puts("Pin ok !...");
-
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
-            /* nothing to do */
-#else
-# error "input mode must be set"
-#endif
-        }
-
-        /* If the current PIN is not correct, execute another round */
-    } while (!valid_pin);
-    return 0;
-err:
-    return 1;
-
-}
-
-/******************************************************************
- * Handle Pet name check from smart, including
- * - Pet name request to smart
- * - Pet name validation by user (or autovalid in mockup mode)
- * - Pet name validation response (Ack/Nack) to smart
- *****************************************************************/
-static int handle_petname(void)
-{
-    uint8_t id;
-    uint8_t ret;
-    logsize_t size = 0;
-
-    struct sync_command      ipc_sync_cmd;
-    struct sync_command_data ipc_sync_cmd_data;
-
-
-    ipc_sync_cmd.magic = MAGIC_CRYPTO_PETPIN_CMD;
-    ipc_sync_cmd.state = SYNC_ASK_FOR_DATA;
-
-    do {
-        size = sizeof(struct sync_command);
-        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
-    } while (ret != SYS_E_DONE);
-
-    /* waiting for smart response, to print the pet name on the screen */
-    id = id_smart;
-    size = sizeof(struct sync_command_data);
-    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
-
-
-    if (ipc_sync_cmd_data.magic != MAGIC_CRYPTO_PETPIN_RESP ||
-            ipc_sync_cmd_data.state != SYNC_DONE)
-    {
-        goto err;
-    }
-
-    char *pet_name = (char*)ipc_sync_cmd_data.data.u8;
-    uint8_t pet_name_len = ipc_sync_cmd_data.data_size;
-
-#ifdef CONFIG_APP_PIN_INPUT_USART
-    console_log("Pet pin is \"%s\". Is it Okay (y/n)?\n");
-    console_flush();
-    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
-    if (pin_len == 1 && pin[0] = 'n') {
-        console_log("Invalid pet name !!!\n");
-        console_flush();
-#elif CONFIG_APP_PIN_INPUT_SCREEN
-    if (get_petname_validation(pet_name, pet_name_len)) {
-        tft_fill_rectangle(0,240,0,320,249,249,249);
-        tft_set_cursor_pos(20,160);
-        tft_setfg(0,0,0);
-        tft_setbg(249,249,249);
-        tft_puts(" Invalid Pet ");
-        tft_set_cursor_pos(20,190);
-        tft_puts("   Name !    ");
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
-    if (0) {
-        /* mockup mode has no pet name check */
-        pet_name = NULL;
-        pet_name_len = 0;
-#else
-# error "input mode must be set"
-#endif
-        ipc_sync_cmd.magic = MAGIC_CRYPTO_PETPIN_RESP;
-        ipc_sync_cmd.state = SYNC_FAILURE;
-    } else {
-        ipc_sync_cmd.magic = MAGIC_CRYPTO_PETPIN_RESP;
-        ipc_sync_cmd.state = SYNC_ACKNOWLEDGE;
-    }
-    do {
-        size = sizeof(struct sync_command);
-        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
-    } while (ret != SYS_E_DONE);
-
-    return 0;
-err:
-    return 1;
-}
-
-
-uint8_t handle_authentication_phase(void)
+int handle_pin(t_pin_mode mode)
 {
     uint8_t pin_len;
 
@@ -329,53 +79,280 @@ uint8_t handle_authentication_phase(void)
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #endif
 
-    /*
-     * First handle Pet Pin. This permit to decrypt
-     * the authentication keys held in the firmware
-     * using the Pet pin given by the user, in
-     * interaction with the smartcard (this permit
-     * authentication keys confidentiality in case
-     * of firmware dumping from flash).
-     */
-    if (handle_pin(pin, pin_len, PIN_MODE_PETPIN)) {
-        printf("Error while handling Pet Pin !\n");
-        goto err;
-    };
+    bool valid_pin = false;
+    uint8_t id;
+    uint8_t ret;
+    logsize_t size = 0;
 
-    /*
-     * now that a vaild pet pin has been received, we request the pet name from
-     * smart, to show it to the user. This pet name must be validated by the user
-     * This protect against malicious board replacement,
-     * to ensure that the pet pin has been validated
-     * by the smartcard before continuing. The pet
-     * name must be the one set previously by the
-     * user.
-     */
-    if (handle_petname()) {
-        printf("Error while handling Pet name !\n");
-        goto err;
-    };
+    struct sync_command      ipc_sync_cmd;
+    struct sync_command_data ipc_sync_cmd_data;
 
-    /*
-     * Then handle the user Pin. This permit to decrypt
-     * the symetric key used to (en|de)crypt the mass-storage
-     * content. The Pin is used to authenticate the
-     * user. It is not the same as the pet name as
-     * the user pin is sent encrypted to the smartcard
-     * as a mutual authenticated channel is mounted. The
-     * pet pin has been sent, for the first communication
-     * part, unencrypted to the smartcard an can then be
-     * spied through the communication bus.
-     */
-    if (handle_pin(pin, pin_len, PIN_MODE_USERPIN)) {
-        printf("Error while handling User Pin !\n");
+    id = id_smart;
+    size = sizeof(struct sync_command);
+
+    valid_pin = false;
+
+    /********************************************************
+     * ask the user for pin, or get mockup value instead
+     *******************************************************/
+
+#if PIN_DEBUG
+    if (mode == PIN_MODE_PETPIN) {
+        printf("smart is asking for Pet pin, asking user...\n");
+    } else if(mode == PIN_MODE_USERPIN)  {
+        printf("smart is asking for User pin, asking user...\n");
+    } 
+#endif
+
+#ifdef CONFIG_APP_PIN_INPUT_USART
+    if (mode == PIN_MODE_PETPIN) {
+        console_log("Enter pet pin code please\n");
+    } else if(mode == PIN_MODE_USERPIN)  {
+        console_log("Enter user pin code please\n");
+    } 
+    console_flush();
+    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+    console_log("pin registered!\n");
+    console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+
+    if (mode == PIN_MODE_PETPIN) {
+        get_pin(" Pet Pin Code ", 14, 0,240,60,320,pin,pin_len);
+    } else if(mode == PIN_MODE_USERPIN)  {
+        get_pin(" User Pin Code", 14, 0,240,60,320,pin,pin_len);
+    }
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
+#else
+# error "input type must be set"
+#endif
+
+
+    /********************************************************
+     * before sending the pin to smart and wait for ack,
+     * print a 'wait message', as smart takes some time
+     * to check and initiate the secure channel
+     *******************************************************/
+#ifdef CONFIG_APP_PIN_INPUT_USART
+    console_log("Please wait...\n");
+    console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+    tft_fill_rectangle(0,240,0,320,249,249,249);
+    tft_set_cursor_pos(20,160);
+    tft_setfg(0,0,0);
+    tft_setbg(249,249,249);
+    tft_puts("Please wait...");
+
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    /* nothing to do */
+#else
+# error "input mode must be set"
+#endif
+
+
+    /********************************************************
+     * send back the pin & pin len values to smart
+     *******************************************************/
+
+    ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
+    ipc_sync_cmd_data.state = SYNC_DONE;
+    ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
+    memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
+    // FIXME check pin len first, should be returned by get_pin()
+    memcpy(&ipc_sync_cmd_data.data.u8, pin, strlen(pin));
+
+    size = sizeof(struct sync_command_data);
+    ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
+
+#if PIN_DEBUG
+    if (mode == PIN_MODE_PETPIN) {
+        printf("Pet Pin sent to smart\n");
+    } else if(mode == PIN_MODE_USERPIN)  {
+        printf("User Pin sent to smart\n");
+    }
+#endif
+
+
+    /********************************************************
+     * waiting for smart acknowledgement for the PIN sent
+     *******************************************************/
+
+    id = id_smart;
+    size = sizeof(struct sync_command);
+    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+
+
+    /********************************************************
+     * Depending on what SMART said, indicate the current status
+     *******************************************************/
+
+    if (ipc_sync_cmd.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd.state == SYNC_ACKNOWLEDGE)
+    {
+        printf("Pin has been acknowledged by SMART\n");
+        valid_pin = true;
+#ifdef CONFIG_APP_PIN_INPUT_USART
+        console_log("valid PIN, continuing...\n");
+        console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+        tft_fill_rectangle(0,240,0,320,249,249,249);
+        tft_set_cursor_pos(20,160);
+        tft_setfg(0,0,0);
+        tft_setbg(249,249,249);
+        tft_puts("Pin ok !...");
+
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+        /* nothing to do */
+#else
+# error "input mode must be set"
+#endif
+    } else {
         goto err;
-    };
+    }
+
+    return 0;
+err:
+    return 1;
+
+}
+
+/******************************************************************
+ * Handle Pet name check from smart, including
+ * - Pet name request to smart
+ * - Pet name validation by user (or autovalid in mockup mode)
+ * - Pet name validation response (Ack/Nack) to smart
+ *****************************************************************/
+static int handle_petname(const char *petname)
+{
+    uint8_t ret;
+    logsize_t size = 0;
+
+    struct sync_command      ipc_sync_cmd;
+
+
+    uint8_t pet_name_len = strlen(petname);
+
+#ifdef CONFIG_APP_PIN_INPUT_USART
+    console_log("Pet pin is \"%s\". Is it Okay (y/n)?\n");
+    console_flush();
+    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+    if (pin_len == 1 && pin[0] = 'n') {
+        console_log("Invalid pet name !!!\n");
+        console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+    if (get_petname_validation(petname, pet_name_len)) {
+        tft_fill_rectangle(0,240,0,320,249,249,249);
+        tft_set_cursor_pos(20,160);
+        tft_setfg(0,0,0);
+        tft_setbg(249,249,249);
+        tft_puts(" Invalid Pet ");
+        tft_set_cursor_pos(20,190);
+        tft_puts("   Name !    ");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    if (0) {
+        /* mockup mode has no pet name check */
+        petname = petname;
+        pet_name_len = 0;
+#else
+# error "input mode must be set"
+#endif
+        ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
+        ipc_sync_cmd.state = SYNC_FAILURE;
+        size = sizeof(struct sync_command);
+        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+        goto err;
+
+    } else {
+        ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
+        ipc_sync_cmd.state = SYNC_ACKNOWLEDGE;
+        size = sizeof(struct sync_command);
+        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+    }
 
     return 0;
 err:
     return 1;
 }
+
+
+uint8_t handle_authentication(enum authentication_mode authmode)
+{
+    uint8_t step = 0;
+    bool authenticated = false;
+    uint8_t id;
+    logsize_t size = 0;
+    struct sync_command_data  ipc_sync_cmd = { 0 };
+
+    id = id_smart;
+    size = sizeof(struct sync_command_data);
+
+    while (!authenticated) {
+        sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+#if 1
+        printf("req.sc_type: %d\n", ipc_sync_cmd.data.req.sc_type);
+        printf("req.sc_req: %d\n", ipc_sync_cmd.data.req.sc_req);
+#endif
+
+        if (ipc_sync_cmd.magic != MAGIC_CRYPTO_PIN_CMD) {
+            printf("smart request is not a PIN CMD\n");
+            goto err;
+        }
+        /* full mode, pet pin, pet name check and user pin are requested */
+        if (authmode == FULL_AUTHENTICATION_MODE) {
+            if (ipc_sync_cmd.data.req.sc_type == SC_PET_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+                printf("smart requesting pet pin\n");
+                if (handle_pin(PIN_MODE_PETPIN)) {
+                    printf("Error while handling Pet Pin !\n");
+                } else {
+                    step++;
+                }
+            }
+            if (ipc_sync_cmd.data.req.sc_type == SC_PET_NAME && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+                printf("smart requesting pet name confirmation\n");
+                if (handle_petname(ipc_sync_cmd.data.req.sc_petname)) {
+                    printf("Error while handling Pet name !\n");
+                    goto err;
+                } else {
+                    step++;
+                }
+            }
+            if (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+                printf("smart requesting user pin\n");
+                if (handle_pin(PIN_MODE_USERPIN)) {
+                    printf("Error while handling User Pin !\n");
+                    goto err;
+                } else {
+                    step++;
+                }
+            }
+
+            if (step == 3) {
+                authenticated = true;
+                break;
+            }
+        }
+        /* Lite mode, only user Pin is requested */
+        else if (authmode == LITE_AUTHENTICATION_MODE) {
+            if (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+                printf("smart requesting user pin\n");
+                if (handle_pin(PIN_MODE_USERPIN)) {
+                    printf("Error while handling User Pin !\n");
+                    goto err;
+                };
+                step++;
+            }
+            if (step == 1) {
+                authenticated = true;
+                break;
+            }
+        } else {
+            goto err;
+        }
+    };
+    return 0;
+err:
+    return 1;
+}
+
 
 /******************************************************
  * The task main function, called by do_starttask().
@@ -540,7 +517,7 @@ int _main(uint32_t task_id)
      * Starting authentication phase
      *******************************************/
     
-    if (handle_authentication_phase()) {
+    if (handle_authentication(FULL_AUTHENTICATION_MODE)) {
         goto err;
     }
 

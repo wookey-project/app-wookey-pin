@@ -437,8 +437,7 @@ void menu_get_events(void)
     char petpin_val[17] = { 0 };
     uint32_t petpin_len = 16;
 
-    char userpin_val[17] = { 0 };
-    uint32_t userpin_len = 16;
+//    char userpin_val[17] = { 0 };
 
     struct sync_command_data      ipc_sync_cmd = { 0 };
     logsize_t size;
@@ -539,16 +538,19 @@ void menu_get_events(void)
 
 
                         /* inform SMART that an authentication phase is requested */
-                        ipc_sync_cmd.magic = MAGIC_CRYPTO_AUTH_CMD;
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_CMD;
                         ipc_sync_cmd.state = SYNC_WAIT;
-                        size = sizeof(struct sync_command);
+                        ipc_sync_cmd.data.req.sc_type = SC_PET_PIN;
+                        ipc_sync_cmd.data.req.sc_req = SC_REQ_MODIFY;
+                        size = sizeof(struct sync_command_data);
 
                         do {
                             ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
                         } while (ret != SYS_E_DONE);
 
+                        /* handle settings */
                         /* handle the authentication phase with smart */
-                        if (handle_authentication_phase()) {
+                        if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
@@ -557,8 +559,9 @@ void menu_get_events(void)
                         get_pin(" new Pet Pin  ", 14, 0,240,60,320,petpin_val,petpin_len);
                         printf("pet pin is: %s, len: %d\n", petpin_val, strlen(petpin_val));
 
+#if 0
                         /* sending new pin to smart */
-                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PETPIN;
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PIN;
                         ipc_sync_cmd.state = SYNC_DONE;
                         ipc_sync_cmd.data_size = strlen(petpin_val);
                         memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
@@ -570,6 +573,7 @@ void menu_get_events(void)
                         } while (ret != SYS_E_DONE);
 
 
+#endif
                         break;
                     }
                 case BOX_SET_PETNAME:
@@ -578,23 +582,25 @@ void menu_get_events(void)
                         memset(petpin_val, 0x0, 33);
 
                         /* inform SMART that an authentication phase is requested */
-                        ipc_sync_cmd.magic = MAGIC_CRYPTO_AUTH_CMD;
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_CMD;
                         ipc_sync_cmd.state = SYNC_WAIT;
-                        size = sizeof(struct sync_command);
+                        ipc_sync_cmd.data.req.sc_type = SC_PET_NAME;
+                        ipc_sync_cmd.data.req.sc_req = SC_REQ_MODIFY;
+                        size = sizeof(struct sync_command_data);
 
                         do {
                             ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
                         } while (ret != SYS_E_DONE);
 
                         /* handle the authentication phase with smart */
-                        if (handle_authentication_phase()) {
+                        if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
 
                         get_txt_pad("  new Pet Name  ", 16, 0,240,60,320,petname_val,petname_len);
                         printf("pet name is: %s, len: %d\n", petname_val, strlen(petname_val));
-
+#if 0
                         /* sending new pet name to smart */
                         ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PETNAME;
                         ipc_sync_cmd.state = SYNC_DONE;
@@ -606,29 +612,36 @@ void menu_get_events(void)
                         do {
                             ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
                         } while (ret != SYS_E_DONE);
-
+#endif
                         break;
                     }
                 case BOX_SET_USERPIN:
                     {
                         printf("[touched] box set userpin pushed !\n");
-                        memset(userpin_val, 0x0, 17);
+//                        memset(userpin_val, 0x0, 17);
 
                         /* inform SMART that an authentication phase is requested */
-                        ipc_sync_cmd.magic = MAGIC_CRYPTO_AUTH_CMD;
+                        ipc_sync_cmd.magic = MAGIC_SETTINGS_CMD;
                         ipc_sync_cmd.state = SYNC_WAIT;
-                        size = sizeof(struct sync_command);
+                        ipc_sync_cmd.data.req.sc_type = SC_USER_PIN;
+                        ipc_sync_cmd.data.req.sc_req = SC_REQ_MODIFY;
+                        size = sizeof(struct sync_command_data);
 
                         do {
                             ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
                         } while (ret != SYS_E_DONE);
 
                         /* handle the authentication phase with smart */
-                        if (handle_authentication_phase()) {
+                        if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
+                        /* get back new Pin from user */
+                        if (handle_pin(PIN_MODE_USERPIN)) {
+                            continue;
+                        }
 
+#if 0
                         /* get the new PIN */
                         get_pin(" new User Pin ", 14, 0,240,60,320,userpin_val,userpin_len);
                         printf("user pin is: %s, len: %d\n", userpin_val, strlen(userpin_val));
@@ -647,7 +660,7 @@ void menu_get_events(void)
 
                         /* waiting for acknowledge */
                         // FIXME to add
-
+#endif
                         break;
                     }
 
