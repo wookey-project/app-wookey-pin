@@ -13,7 +13,6 @@ extern const int font_width;
 extern const int font_height;
 extern const int font_blankskip;
 
-#define PIN_DEBUG 0
 
 #define SCREEN_SIZE_X 240
 #define SCREEN_SIZE_Y 320

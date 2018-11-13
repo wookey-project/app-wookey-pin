@@ -68,10 +68,26 @@ typedef enum {
     MENU_MAIN     = 0,
     MENU_SETTINGS = 1,
     MENU_WIPE     = 2,
-    MENU_STATUS   = 3
+    MENU_STATUS   = 3,
+    MENU_FAILURE  = 4
 } t_current_menu;
 
+/* Fail message management */
+static const char *fail_msg[] =
+{
+    "Pet Pin",
+    "Pet Name",
+    "User Pin"
+};
+enum fail_id {
+    FAIL_PETPIN,
+    FAIL_PETNAME,
+    FAIL_USERPIN
+};
+
 uint32_t pin_remaining_tries = CONFIG_AUTH_TOKEN_MAX_PIN;
+uint8_t current_fail_msg = 0;
+
 
 void update_remaining_tries(uint32_t val)
 {
@@ -142,6 +158,14 @@ t_box get_box(int x, int y)
                 box = BOX_WIPE_STORAGE;
             }
             if (x > 0 && x < 240 && y > 270 && y < 320) {
+                box = BOX_RETURN;
+            }
+            break;
+        }
+        
+        case MENU_FAILURE:
+        {
+            if (x > 95 && x < 145 && y > 240 && y < 290) {
                 box = BOX_RETURN;
             }
             break;
@@ -301,6 +325,32 @@ void draw_menu(int x, int y)
             break;
 
         }
+
+        case MENU_FAILURE:
+        {
+            cury = 20;
+            // print status information
+            tft_fill_rectangle(0,240,0,320,255,255,255);
+            tft_setfg(190,0,0);
+            tft_setbg(255,255,255);
+            tft_set_cursor_pos(120 - (4*char_width),cury);
+            tft_puts("Failure!");
+            cury += font_height;
+            tft_set_cursor_pos(120 - (4*char_width),cury);
+            tft_puts("Invalid ");
+            cury += font_height/2;
+            tft_set_cursor_pos(120 - ((strlen(fail_msg[current_fail_msg])/2)*char_width),cury);
+            tft_puts((char*)fail_msg[current_fail_msg]);
+#
+            draw_menubox2(95,145,240,290,
+                    0,
+                    133,135,132,
+                    returning_colormap,
+                    returning,
+                    sizeof(returning));
+            break;
+        }
+
 
         case MENU_SETTINGS:
         {
@@ -504,27 +554,34 @@ void menu_get_events(void)
             switch (box) {
                 case BOX_SETTINGS:
                     {
+#if PIN_DEBUG
                         printf("[touched] box settings pushed !\n");
+#endif
                         nextmenu = MENU_SETTINGS;
                         break;
                     }
                 case BOX_STATUS:
                     {
+#if PIN_DEBUG
                         printf("[touched] box status pushed !\n");
+#endif
                         nextmenu = MENU_STATUS;
                         break;
                     }
 
                 case BOX_WIPE:
                     {
+#if PIN_DEBUG
                         printf("[touched] box wipe pushed !\n");
+#endif
                         nextmenu = MENU_WIPE;
                         break;
                     }
                 case BOX_LOCK:
                     {
-                        /* ask smart for lock. Smart will reset the board */
+#if PIN_DEBUG
                         printf("[touched] box lock pushed !\n");
+#endif
                         ipc_sync_cmd.magic = MAGIC_SETTINGS_LOCK;
                         ipc_sync_cmd.state = SYNC_WAIT;
                         size = sizeof(struct sync_command);
@@ -536,13 +593,17 @@ void menu_get_events(void)
                     }
                 case BOX_RETURN:
                     {
+#if PIN_DEBUG
                         printf("[touched] box return pushed !\n");
+#endif
                         nextmenu = MENU_MAIN;
                         break;
                     }
                 case BOX_SET_PETPIN:
                     {
+#if PIN_DEBUG
                         printf("[touched] box set petpin pushed !\n");
+#endif
                         memset(petpin_val, 0x0, 17);
 
 
@@ -561,6 +622,8 @@ void menu_get_events(void)
                         /* handle the authentication phase with smart */
                         if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
                             printf("fail to handle authentication ! leaving...\n");
+                            current_fail_msg = FAIL_USERPIN;
+                            nextmenu = MENU_FAILURE;
                             continue;
                         }
                         if (handle_full_pin_cmd_request()) {
@@ -571,7 +634,9 @@ void menu_get_events(void)
                     }
                 case BOX_SET_PETNAME:
                     {
+#if PIN_DEBUG
                         printf("[touched] box set petname pushed !\n");
+#endif
                         memset(petpin_val, 0x0, 33);
 
                         /* inform SMART that an authentication phase is requested */
@@ -588,6 +653,8 @@ void menu_get_events(void)
                         /* handle the authentication phase with smart */
                         if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
                             printf("fail to handle authentication ! leaving...\n");
+                            current_fail_msg = FAIL_USERPIN;
+                            nextmenu = MENU_FAILURE;
                             continue;
                         }
                         if (handle_full_pin_cmd_request()) {
@@ -598,7 +665,9 @@ void menu_get_events(void)
                     }
                 case BOX_SET_USERPIN:
                     {
+#if PIN_DEBUG
                         printf("[touched] box set userpin pushed !\n");
+#endif
 //                        memset(userpin_val, 0x0, 17);
 
                         /* inform SMART that an authentication phase is requested */
@@ -615,6 +684,8 @@ void menu_get_events(void)
                         /* handle the authentication phase with smart */
                         if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
                             printf("fail to handle authentication ! leaving...\n");
+                            current_fail_msg = FAIL_USERPIN;
+                            nextmenu = MENU_FAILURE;
                             continue;
                         }
                         if (handle_full_pin_cmd_request()) {

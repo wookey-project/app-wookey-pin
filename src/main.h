@@ -1,6 +1,8 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+#define PIN_DEBUG 0
+
 enum authentication_mode {
   FULL_AUTHENTICATION_MODE,
   LITE_AUTHENTICATION_MODE

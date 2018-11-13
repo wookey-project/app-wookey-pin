@@ -34,9 +34,6 @@
 #include "wookey_ipc.h"
 #include "main.h"
 
-#define PIN_DEBUG 1
-
-
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
