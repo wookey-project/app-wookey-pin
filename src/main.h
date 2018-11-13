@@ -15,6 +15,8 @@ typedef enum {
 
 uint8_t handle_authentication(enum authentication_mode authmode);
 
-int handle_pin(t_pin_mode mode);
+int handle_pin_request(t_pin_mode mode);
+
+int handle_petname_request(void);
 
 #endif

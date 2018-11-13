@@ -64,7 +64,7 @@ void cb_usart_irq(uint32_t sr, uint32_t dr)
  * - Pin response to smart
  * - Pin acknowledge from smart
  *****************************************************************/
-int handle_pin(t_pin_mode mode)
+int handle_pin_request(t_pin_mode mode)
 {
     uint8_t pin_len;
 
@@ -215,13 +215,75 @@ err:
 
 }
 
+/*
+ * Request pet name from user (pet name update)
+ */
+int handle_petname_request(void)
+{
+    /*******************************************
+     * get pet name from user
+     ******************************************/
+#ifdef CONFIG_APP_PIN_INPUT_USART
+    char *petname = 0;
+    uint8_t petname_len = 0;
+    char *ack = 0;
+    uint8_t ack_len = 0;
+
+    bool validated=false;
+    do {
+        console_log("Please enter new pet name:\n");
+        console_flush();
+        shell_readline(&petname, &petname_len);
+        console_log("Confirm pet name ? (y/n)\n");
+        console_flush();
+        shell_readline(&ack, &ack_len);
+        if (ack_len == 1 && pin[0] = 'y') {
+            validated=true;
+        }
+    } while (!validated);
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+
+    char *petname = 0;
+    uint8_t petname_len = 24;
+
+    get_txt_pad("New pet name", 12, 0,240, 0, 320, petname, petname_len);
+
+    tft_fill_rectangle(0,240,0,320,249,249,249);
+    tft_set_cursor_pos(20,160);
+    tft_setfg(0,0,0);
+    tft_setbg(249,249,249);
+    tft_puts(" Pet name ");
+    tft_set_cursor_pos(20,190);
+    tft_puts("  registered ");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    /* mockup mode has no pet name check */
+    //const char *petname = "johny";
+    //uint8_t pet_name_len = 5;
+#else
+# error "input mode must be set"
+#endif
+
+    /*******************************************
+     * send pet name to SMART
+     ******************************************/
+
+    // TODO
+    /*******************************************
+     * wait for SMART pet name update acknowledge
+     ******************************************/
+    // TODO
+
+    return 0;
+}
+
+
 /******************************************************************
  * Handle Pet name check from smart, including
  * - Pet name request to smart
  * - Pet name validation by user (or autovalid in mockup mode)
  * - Pet name validation response (Ack/Nack) to smart
  *****************************************************************/
-static int handle_petname(const char *petname)
+static int handle_petname_confirmation(const char *petname)
 {
     uint8_t ret;
     logsize_t size = 0;
@@ -300,7 +362,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
         if (authmode == FULL_AUTHENTICATION_MODE) {
             if (ipc_sync_cmd.data.req.sc_type == SC_PET_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
                 printf("smart requesting pet pin\n");
-                if (handle_pin(PIN_MODE_PETPIN)) {
+                if (handle_pin_request(PIN_MODE_PETPIN)) {
                     printf("Error while handling Pet Pin !\n");
                 } else {
                     step++;
@@ -308,7 +370,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
             }
             if (ipc_sync_cmd.data.req.sc_type == SC_PET_NAME && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
                 printf("smart requesting pet name confirmation\n");
-                if (handle_petname(ipc_sync_cmd.data.req.sc_petname)) {
+                if (handle_petname_confirmation(ipc_sync_cmd.data.req.sc_petname)) {
                     printf("Error while handling Pet name !\n");
                     goto err;
                 } else {
@@ -317,7 +379,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
             }
             if (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
                 printf("smart requesting user pin\n");
-                if (handle_pin(PIN_MODE_USERPIN)) {
+                if (handle_pin_request(PIN_MODE_USERPIN)) {
                     printf("Error while handling User Pin !\n");
                     goto err;
                 } else {
@@ -334,7 +396,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
         else if (authmode == LITE_AUTHENTICATION_MODE) {
             if (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
                 printf("smart requesting user pin\n");
-                if (handle_pin(PIN_MODE_USERPIN)) {
+                if (handle_pin_request(PIN_MODE_USERPIN)) {
                     printf("Error while handling User Pin !\n");
                     goto err;
                 };

@@ -431,11 +431,7 @@ void menu_get_events(void)
 {
     // initial menu draw
 
-    char petname_val[33] = { 0 };
-    uint32_t petname_len = 32;
-
     char petpin_val[17] = { 0 };
-    uint32_t petpin_len = 16;
 
 //    char userpin_val[17] = { 0 };
 
@@ -554,10 +550,11 @@ void menu_get_events(void)
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
-
-                        /* get the new PIN */
-                        get_pin(" new Pet Pin  ", 14, 0,240,60,320,petpin_val,petpin_len);
-                        printf("pet pin is: %s, len: %d\n", petpin_val, strlen(petpin_val));
+                        if (handle_pin_request(PIN_MODE_PETPIN)) {
+                            printf("Error while handling Pet Pin !\n");
+                        } else {
+                            printf("Pet pin update done\n");
+                        }
 
 #if 0
                         /* sending new pin to smart */
@@ -597,9 +594,12 @@ void menu_get_events(void)
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
+                        if (handle_petname_request()) {
+                            printf("Error while handling Pet name !\n");
+                        } else {
+                            printf("Pet name update done\n");
+                        }
 
-                        get_txt_pad("  new Pet Name  ", 16, 0,240,60,320,petname_val,petname_len);
-                        printf("pet name is: %s, len: %d\n", petname_val, strlen(petname_val));
 #if 0
                         /* sending new pet name to smart */
                         ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PETNAME;
@@ -637,10 +637,11 @@ void menu_get_events(void)
                             continue;
                         }
                         /* get back new Pin from user */
-                        if (handle_pin(PIN_MODE_USERPIN)) {
-                            continue;
+                        if (handle_pin_request(PIN_MODE_USERPIN)) {
+                            printf("Error while handling Pet Pin !\n");
+                        } else {
+                            printf("Pet pin update done\n");
                         }
-
 #if 0
                         /* get the new PIN */
                         get_pin(" new User Pin ", 14, 0,240,60,320,userpin_val,userpin_len);
