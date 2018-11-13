@@ -31,7 +31,7 @@
 #endif
 
 #include "libshell.h"
-#include "ipc_proto.h"
+#include "wookey_ipc.h"
 #include "main.h"
 
 #define PIN_DEBUG 1
@@ -274,6 +274,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 # error "input mode must be set"
 #endif
     } else {
+        printf("Smart said that PIN is invalid\n");
         goto err;
     }
 

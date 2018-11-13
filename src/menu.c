@@ -5,7 +5,7 @@
 #include "api/print.h"
 #include "api/types.h"
 #include "api/syscall.h"
-#include "ipc_proto.h"
+#include "wookey_ipc.h"
 #include "libtouch.h"
 //#include "bg.h"
 #include "rtc.h"
