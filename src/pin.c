@@ -572,15 +572,15 @@ void get_txt_pad(const char *title,
 }
 
 
-void get_pin(const char *title,
+uint8_t get_pin(const char *title,
              uint32_t    title_len __attribute__((unused)),
              int x1,int x2, int y1, int y2,
-             char *mypin, char nb_pin)
+             char *mypin, uint8_t max_pin_len)
 {
   const int hspace=5, vspace=10;
   char *tmp;
   char *tmpkeys[12]={"1","2","3","4","5","6","7","8","9","0","Cor","Ok"};
-  unsigned char nb_given=0;
+  uint8_t nb_given=0;
   int hsize = (x2-x1-3*hspace)/3;
   int vsize = (y2-y1-4*vspace)/5;
   int i;
@@ -722,7 +722,7 @@ void get_pin(const char *title,
 	mypin[nb_given]=0;
 	nb_given--;//just to catch the ++ of pin_redraw_text_footer
 #if PIN_DEBUG
-      printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
+      printf("nb_given %d max_pin_len %d\n",nb_given,nb_pin);
 #endif
       }
     }
@@ -735,14 +735,14 @@ void get_pin(const char *title,
                 y1+lasty*vspace+lasty*vsize+vsize-2, keys[lastcase],WOOKEY_GREEN);
         //Last touch was Ok 
 #if PIN_DEBUG
-        printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
+        printf("nb_given %d nb_pin %d\n",nb_given,max_pin_len);
 #endif
         //if(nb_given == nb_pin), always return when ok is pushed
-            return;	
+            return nb_given;	
     }
     else
     {
-        if(nb_given<nb_pin)
+        if(nb_given<max_pin_len)
             mypin[nb_given++]=keys[lastcase][0];
     }
     //Redraw text footer

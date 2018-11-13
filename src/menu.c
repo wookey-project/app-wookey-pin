@@ -71,6 +71,13 @@ typedef enum {
     MENU_STATUS   = 3
 } t_current_menu;
 
+uint32_t pin_remaining_tries = CONFIG_AUTH_TOKEN_MAX_PIN;
+
+void update_remaining_tries(uint32_t val)
+{
+    pin_remaining_tries = val;
+}
+
 static volatile t_current_menu menu = MENU_MAIN;
 
 t_box get_box(int x, int y)
@@ -277,6 +284,12 @@ void draw_menu(int x, int y)
             tft_set_cursor_pos(240 - (6*char_width),cury);
             tft_puts("0.0.1");
 
+            cury += font_height/2;
+
+            tft_set_cursor_pos(0,cury);
+            tft_puts("Pin tries:");
+            tft_set_cursor_pos(240 - (2*char_width),cury);
+            tft_putc('0'+pin_remaining_tries);
 
             // return button
             draw_menubox2(0,240,270,320,
@@ -550,27 +563,10 @@ void menu_get_events(void)
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
-                        if (handle_pin_request(PIN_MODE_PETPIN)) {
-                            printf("Error while handling Pet Pin !\n");
-                        } else {
-                            printf("Pet pin update done\n");
+                        if (handle_full_pin_cmd_request()) {
+                            printf("fail to handle pin cmd request\n");
+                            continue;
                         }
-
-#if 0
-                        /* sending new pin to smart */
-                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PIN;
-                        ipc_sync_cmd.state = SYNC_DONE;
-                        ipc_sync_cmd.data_size = strlen(petpin_val);
-                        memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
-                        memcpy((void*)ipc_sync_cmd.data.u8, petpin_val, strlen(petpin_val));
-                        size = sizeof(struct sync_command_data);
-
-                        do {
-                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
-                        } while (ret != SYS_E_DONE);
-
-
-#endif
                         break;
                     }
                 case BOX_SET_PETNAME:
@@ -594,25 +590,10 @@ void menu_get_events(void)
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
-                        if (handle_petname_request()) {
-                            printf("Error while handling Pet name !\n");
-                        } else {
-                            printf("Pet name update done\n");
+                        if (handle_full_pin_cmd_request()) {
+                            printf("fail to handle pin cmd request\n");
+                            continue;
                         }
-
-#if 0
-                        /* sending new pet name to smart */
-                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_PETNAME;
-                        ipc_sync_cmd.state = SYNC_DONE;
-                        ipc_sync_cmd.data_size = strlen(petname_val);
-                        memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
-                        memcpy((void*)ipc_sync_cmd.data.u8, petpin_val, strlen(petname_val));
-                        size = sizeof(struct sync_command_data);
-
-                        do {
-                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
-                        } while (ret != SYS_E_DONE);
-#endif
                         break;
                     }
                 case BOX_SET_USERPIN:
@@ -636,32 +617,10 @@ void menu_get_events(void)
                             printf("fail to handle authentication ! leaving...\n");
                             continue;
                         }
-                        /* get back new Pin from user */
-                        if (handle_pin_request(PIN_MODE_USERPIN)) {
-                            printf("Error while handling Pet Pin !\n");
-                        } else {
-                            printf("Pet pin update done\n");
+                        if (handle_full_pin_cmd_request()) {
+                            printf("fail to handle pin cmd request\n");
+                            continue;
                         }
-#if 0
-                        /* get the new PIN */
-                        get_pin(" new User Pin ", 14, 0,240,60,320,userpin_val,userpin_len);
-                        printf("user pin is: %s, len: %d\n", userpin_val, strlen(userpin_val));
-
-                        /* sending new pin to smart */
-                        ipc_sync_cmd.magic = MAGIC_SETTINGS_SET_USERPIN;
-                        ipc_sync_cmd.state = SYNC_DONE;
-                        ipc_sync_cmd.data_size = strlen(userpin_val);
-                        memset((void*)ipc_sync_cmd.data.u8, 0x0, 32);
-                        memcpy((void*)ipc_sync_cmd.data.u8, userpin_val, strlen(userpin_val));
-                        size = sizeof(struct sync_command_data);
-
-                        do {
-                            ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
-                        } while (ret != SYS_E_DONE);
-
-                        /* waiting for acknowledge */
-                        // FIXME to add
-#endif
                         break;
                     }
 

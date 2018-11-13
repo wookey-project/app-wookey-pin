@@ -16,4 +16,6 @@ bool menu_is_touched(int posx, int posy);
 
 void draw_background(void);
 
+void update_remaining_tries(uint32_t val);
+
 #endif

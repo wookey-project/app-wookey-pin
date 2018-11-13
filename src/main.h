@@ -6,17 +6,12 @@ enum authentication_mode {
   LITE_AUTHENTICATION_MODE
 };
 
-typedef enum {
-    PIN_MODE_PETPIN,
-    PIN_MODE_USERPIN
-} t_pin_mode;
-
-
-
 uint8_t handle_authentication(enum authentication_mode authmode);
 
-int handle_pin_request(t_pin_mode mode);
+int handle_pin_request(uint8_t pin_type, uint8_t pin_mode);
 
 int handle_petname_request(void);
+
+int handle_full_pin_cmd_request(void);
 
 #endif

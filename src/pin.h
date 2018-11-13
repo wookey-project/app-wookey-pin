@@ -13,10 +13,10 @@ void get_txt_pad(const char *title,
                  uint32_t    title_len __attribute__((unused)),
                  int x1,int x2, int y1, int y2, char *mypin, char nb_pin);
 
-void get_pin(const char *title,
+uint8_t get_pin(const char *title,
              uint32_t    title_len,
              int x1,int x2, int y1, int y2,
-             char *mypin, char nb_pin);
+             char *mypin, uint8_t max_pin_len);
 
 void draw_pin(int x1,int x2, int y1, int y2);
 void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset);
