@@ -17,7 +17,6 @@
 # include "libconsole.h"
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 # include "gui_pin.h"
-# include "gui_menu.h"
 # include "lock2.h"
 # include "fail.h"
 # include "libspi.h"
@@ -28,6 +27,9 @@
 #else
 # error "please specify input mode"
 #endif
+
+/* enum & struct of gui_menu.h are requested in any mode */
+#include "gui_menu.h"
 
 #include "libshell.h"
 #include "wookey_ipc.h"
@@ -98,12 +100,20 @@ static int handle_pin_request(uint8_t mode, uint8_t type)
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
     if (mode == SC_PET_PIN) {
-        console_log("Enter pet pin code please\n");
+        if (type == SC_REQ_AUTHENTICATE) {
+            console_log("Enter pet pin code please\n");
+        } else if (type == SC_REQ_MODIFY) {
+            console_log("Enter new pet pin code please\n");
+        }
     } else if(mode == SC_USER_PIN)  {
-        console_log("Enter user pin code please\n");
+        if (type == SC_REQ_AUTHENTICATE) {
+            console_log("Enter user pin code please\n");
+        } else if (type == SC_REQ_MODIFY) {
+            console_log("Enter new user pin code please\n");
+        }
     } 
     console_flush();
-    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
+    shell_readline(&pin, (uint32_t*)&pin_len); /*FIXME: update API, set string... and size */
     console_log("pin registered!\n");
     console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
@@ -199,7 +209,7 @@ static int handle_pin_request(uint8_t mode, uint8_t type)
      * Depending on what SMART said, indicate the current status
      *******************************************************/
 
-#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
+#if CONFIG_APP_PIN_INPUT_SCREEN
     /* Updating remaining tries with what the token said */
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) {
         if (mode == SC_USER_PIN && type == SC_REQ_AUTHENTICATE)
@@ -262,11 +272,11 @@ int handle_petname_request(void)
     do {
         console_log("Please enter new pet name:\n");
         console_flush();
-        shell_readline(&petname, &petname_len);
+        shell_readline(&petname, (uint32_t*)&petname_len);
         console_log("Confirm pet name ? (y/n)\n");
         console_flush();
-        shell_readline(&ack, &ack_len);
-        if (ack_len == 1 && pin[0] = 'y') {
+        shell_readline(&ack, (uint32_t*)&ack_len);
+        if (ack_len == 1 && ack[0] == 'y') {
             validated=true;
         }
     } while (!validated);
@@ -374,17 +384,19 @@ static int handle_petname_confirmation(const char *petname)
 
     struct sync_command      ipc_sync_cmd;
 
-
-    uint8_t pet_name_len = strlen(petname);
-
 #ifdef CONFIG_APP_PIN_INPUT_USART
-    console_log("Pet pin is \"%s\". Is it Okay (y/n)?\n");
+    char *ack = 0;
+    uint8_t ack_len = 0;
+
+    console_log("Pet name is \"%s\". Is it Okay (y/n)?\n", petname);
     console_flush();
-    shell_readline(&pin, &pin_len); /*FIXME: update API, set string... and size */
-    if (pin_len == 1 && pin[0] = 'n') {
+    shell_readline(&ack, (uint32_t*)&ack_len); /*FIXME: update API, set string... and size */
+    if (ack_len == 1 && ack[0] == 'n') {
         console_log("Invalid pet name !!!\n");
         console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
+    uint8_t pet_name_len = strlen(petname);
+
     if (pin_request_string_validation("pet name", petname, pet_name_len)) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_set_cursor_pos(20,160);
@@ -397,7 +409,6 @@ static int handle_petname_confirmation(const char *petname)
     if (0) {
         /* mockup mode has no pet name check */
         petname = petname;
-        pet_name_len = 0;
 #else
 # error "input mode must be set"
 #endif
