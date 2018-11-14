@@ -1,7 +1,4 @@
 #include "autoconf.h"
-#ifdef CONFIG_APP_PIN_INPUT_USART
-/* usart mode. This file is not needed */
-#else
 #include "libtft.h"
 #include "libtouch.h"
 #include "api/types.h"
@@ -9,33 +6,53 @@
 #include "api/print.h"
 #include "api/random.h"
 #include "pin.h"
-#include "menu.h"
+
+#define HIGHLIGHT_COLOR WHITE
+#define WHITE 255,255,255
+#define BLACK 0,0,0
+#define WOOKEY_BLUE 29,201,255
+#define WOOKEY_RED 226,39,92 
+#define WOOKEY_GREEN 9,250,57
+#define WOOKEY_ORANGE 255,213,19
+#define GRAY 226,226,226
+
+
 extern const int font_width;
 extern const int font_height;
 extern const int font_blankskip;
 
-
-#define SCREEN_SIZE_X 240
-#define SCREEN_SIZE_Y 320
-
 static char *keys[12];
-//static char pin[4];//FIXME Ought to be SHA hash or so no cleartext here
-//static unsigned char nbpin=4;
+
+typedef enum {
+    DRAW_MODE_PIN,
+    DRAW_MODE_PETPIN
+} t_draw_mode;
+
 
 
 #define TXT_KEY_BASE   0x21
 #define TXT_KEY_NUM    90
 #define TXT_KEY_PAGES  9
 
-int mystrlen(char *s)
+static void dopermu(char **mykeys, const uint32_t mysize)
 {
-  int res;
-  for(res=0;s[res];res++);
-  return res;
+  uint32_t i;
+  for(i=0;i<mysize-1;i++)
+  {
+    uint32_t rand;
+    char *stock;
+    get_random((unsigned char*)&rand,sizeof(uint32_t));
+    //rand%=i; this will not work on cortex m4 gcc --nobuiltins
+    for(rand&=0xff; rand>=(mysize-i);rand/=(mysize-i)); //Truncate then modulo
+    stock=mykeys[rand+i];
+    mykeys[rand+i]=mykeys[i];
+    mykeys[i]=stock;
+  }
 }
 
 
-void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
+
+static void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
 {
   const int hspace=5, vspace=10, char_width=font_width/128;
   int hsize = (x2-x1-3*hspace)/3;
@@ -138,70 +155,9 @@ void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset)
   tft_puts("Ok");	
 }
 
-void pin_draw_case(int x1,int x2, int y1, int y2, const char *c, 
-			uint8_t r, uint8_t g, uint8_t b);
 
-uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len)
-{
-  pet_name_len = pet_name_len;
-  tft_setfg(200,200,200);
-  tft_setbg(5,0,5);
-  tft_set_cursor_pos(0,29);
 
-  tft_fill_rectangle(0,240,0,320,0,0,0);
-  tft_setfg(200,200,200);
-  tft_setbg(5,0,5);
-  tft_set_cursor_pos(0,0);
-  tft_puts("Please validate");
-  tft_set_cursor_pos(0,29);
-  tft_puts("  pet name  ");
-
-  pin_draw_case(10, 230, 70, 230, petname, 245, 245, 245);
-
-  tft_fill_rectangle(8, 82, 248, 302, 240,240,240);
-  pin_draw_case(10, 80, 250, 300, "OK", WOOKEY_GREEN);
-
-  tft_fill_rectangle(158, 232, 248, 302, 240,240,240);
-  pin_draw_case(160, 230, 250, 300, "KO", WOOKEY_RED);
-
-  while (1) {
-    touch_read_X_DFR();//Ensures that PenIRQ is enabled
-    /*
-     * Between touch_read_X_DFR and touch_is_touched, we need to wait a little
-     * or touch_is_touched() will return an invalid value
-     */
-    sys_sleep(10, SLEEP_MODE_INTERRUPTIBLE);
-
-    while(!(touch_is_touched())) {
-        touch_enable_exti();
-        sys_yield();
-    }
-    //Refresh the actual positions
-    touch_refresh_pos();
-    //Follow the motion on the screen
-    while(touch_refresh_pos(),touch_is_touched())
-    {
-      int posx,posy;
-      //touch_refresh_pos();
-      posy=touch_getx();
-      posx=touch_gety();
-
-      if (posx > 10 && posx < 80 && posy > 250 && posy < 300) {
-
-          /* OK pushed */
-          return 0;
-      }
-
-      if (posx > 160 && posx < 230 && posy > 250 && posy < 300) {
-          /* Invalid pushed */
-          return 1;
-      }
-    }
-  }
-  return 0;
-}
-
-void draw_pin(int x1,int x2, int y1, int y2)
+static void draw_pin(int x1,int x2, int y1, int y2)
 {
   const int hspace=5, vspace=10, char_width=font_width/128;
   int hsize = (x2-x1-3*hspace)/3;
@@ -299,29 +255,72 @@ void draw_pin(int x1,int x2, int y1, int y2)
 #endif
 }
 
-void dopermu(char **mykeys, const uint32_t mysize)
+
+static void pin_draw_case(int x1,int x2, int y1, int y2, const char *c, 
+			uint8_t r, uint8_t g, uint8_t b);
+
+uint8_t pin_request_string_validation(const char *msg, const char *string, uint8_t string_len)
 {
-  uint32_t i;
-  for(i=0;i<mysize-1;i++)
-  {
-    uint32_t rand;
-    char *stock;
-    get_random((unsigned char*)&rand,sizeof(uint32_t));
-    //rand%=i; this will not work on cortex m4 gcc --nobuiltins
-    for(rand&=0xff; rand>=(mysize-i);rand/=(mysize-i)); //Truncate then modulo
-    stock=mykeys[rand+i];
-    mykeys[rand+i]=mykeys[i];
-    mykeys[i]=stock;
+  string_len = string_len;
+  tft_setfg(200,200,200);
+  tft_setbg(5,0,5);
+  tft_set_cursor_pos(0,29);
+
+  tft_fill_rectangle(0,240,0,320,0,0,0);
+  tft_setfg(200,200,200);
+  tft_setbg(5,0,5);
+  tft_set_cursor_pos(0,0);
+  tft_puts("Please validate");
+  tft_set_cursor_pos(0,29);
+  tft_puts((char*)msg);
+
+  pin_draw_case(10, 230, 70, 230, string, 245, 245, 245);
+
+  tft_fill_rectangle(8, 82, 248, 302, 240,240,240);
+  pin_draw_case(10, 80, 250, 300, "OK", WOOKEY_GREEN);
+
+  tft_fill_rectangle(158, 232, 248, 302, 240,240,240);
+  pin_draw_case(160, 230, 250, 300, "KO", WOOKEY_RED);
+
+  while (1) {
+    touch_read_X_DFR();//Ensures that PenIRQ is enabled
+    /*
+     * Between touch_read_X_DFR and touch_is_touched, we need to wait a little
+     * or touch_is_touched() will return an invalid value
+     */
+    sys_sleep(10, SLEEP_MODE_INTERRUPTIBLE);
+
+    while(!(touch_is_touched())) {
+        touch_enable_exti();
+        sys_yield();
+    }
+    //Refresh the actual positions
+    touch_refresh_pos();
+    //Follow the motion on the screen
+    while(touch_refresh_pos(),touch_is_touched())
+    {
+      int posx,posy;
+      //touch_refresh_pos();
+      posy=touch_getx();
+      posx=touch_gety();
+
+      if (posx > 10 && posx < 80 && posy > 250 && posy < 300) {
+
+          /* OK pushed */
+          return 0;
+      }
+
+      if (posx > 160 && posx < 230 && posy > 250 && posy < 300) {
+          /* Invalid pushed */
+          return 1;
+      }
+    }
   }
+  return 0;
 }
-#if 1
 
-typedef enum {
-    DRAW_MODE_PIN,
-    DRAW_MODE_PETPIN
-} t_draw_mode;
 
-void pin_redraw_text_footer(const char nb_given, const char *str, t_draw_mode mode, 
+static void pin_redraw_text_footer(const char nb_given, const char *str, t_draw_mode mode, 
 			int x1, int x2, int y1, int y2)
 {
   int posx,posy,i;
@@ -357,7 +356,7 @@ void pin_redraw_text_footer(const char nb_given, const char *str, t_draw_mode mo
   }
 }
 
-void pin_draw_case(int x1,int x2, int y1, int y2, const char *c, 
+static void pin_draw_case(int x1,int x2, int y1, int y2, const char *c, 
 			uint8_t r, uint8_t g, uint8_t b)
 {
   const int char_width=font_width/128;
@@ -403,26 +402,27 @@ void pin_draw_case(int x1,int x2, int y1, int y2, const char *c,
 //  posx=(x2-x1-strlen(c)*char_width)/2;
 }
 
-void pin_normal_case(int x1,int x2, int y1, int y2, char *c)
+static void pin_normal_case(int x1,int x2, int y1, int y2, char *c)
 {
    pin_draw_case(x1,x2,y1,y2,c,WOOKEY_BLUE);
 }
-void pin_highlight_case(int x1,int x2, int y1, int y2, char *c)
+static void pin_highlight_case(int x1,int x2, int y1, int y2, char *c)
 {
    pin_draw_case(x1,x2,y1,y2,c,HIGHLIGHT_COLOR);
 }
 
 
-void get_txt_pad(const char *title,
-                 uint32_t    title_len __attribute__((unused)),
-                 int x1,int x2, int y1, int y2, char *mypin, char nb_pin)
+void pin_request_string(const char *title,
+                        uint32_t    title_len,
+                        int x1,int x2, int y1, int y2,
+                        char *string, uint8_t maxlen)
 {
   const int hspace=5, vspace=10;
-  unsigned char nb_given=0;
+  uint8_t nb_given=0;
   int hsize = (x2-x1-3*hspace)/3;
   int vsize = (y2-y1-4*vspace)/5;
   uint8_t offset = 0;
-  nb_pin = nb_pin;
+  title_len = title_len;
 
   tft_setfg(200,200,200);
   tft_setbg(5,0,5);
@@ -569,16 +569,6 @@ void get_txt_pad(const char *title,
 	y1+lasty*vspace+lasty*vsize+2,
 	y1+lasty*vspace+lasty*vsize+vsize-2, "<<",WOOKEY_ORANGE);
       //Last touch was for correcting
-#if 0
-      if(nb_given>0)
-      {
-	mypin[nb_given]=0;
-	nb_given--;//just to catch the ++ of pin_redraw_text_footer
-#if PIN_DEBUG
-      printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
-#endif
-      }
-#endif
       draw_txt_pad(x1,x2,y1,y2, offset);
     }
     else if ((lasty==4) && (lastx==2))
@@ -595,24 +585,22 @@ void get_txt_pad(const char *title,
                 y1+lasty*vspace+lasty*vsize+vsize-2, ">>",WOOKEY_ORANGE);
         //Last touch was Ok 
 #if PIN_DEBUG
-        printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
-#endif
-#if 0
-        if(nb_given == nb_pin)
-            return;	
+        printf("nb_given %d nb_pin %d\n",nb_given,maxlen);
 #endif
       draw_txt_pad(x1,x2,y1,y2, offset);
     } else {
-        mypin[nb_given++]=key[0];
+        if (nb_given < maxlen) {
+          string[nb_given++]=key[0];
+        }
     }
     //Redraw text footer
-    pin_redraw_text_footer(nb_given, mypin, DRAW_MODE_PETPIN, x1+2, x2-hspace-62,
+    pin_redraw_text_footer(nb_given, string, DRAW_MODE_PETPIN, x1+2, x2-hspace-62,
 	    y1+2, y1+vsize-2);  
   }
 }
 
 
-uint8_t get_pin(const char *title,
+uint8_t pin_request_digits(const char *title,
              uint32_t    title_len __attribute__((unused)),
              int x1,int x2, int y1, int y2,
              char *mypin, uint8_t max_pin_len)
@@ -790,5 +778,3 @@ uint8_t get_pin(const char *title,
 	    y1+2, y1+vsize-2);  
   }
 }
-#endif
-#endif

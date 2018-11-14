@@ -1,29 +1,32 @@
 #ifndef MYPIN_H
 #define MYPIN_H
-#define HIGHLIGHT_COLOR WHITE
-#define WHITE 255,255,255
-#define BLACK 0,0,0
-#define WOOKEY_BLUE 29,201,255
-#define WOOKEY_RED 226,39,92 
-#define WOOKEY_GREEN 9,250,57
-#define WOOKEY_ORANGE 255,213,19
-#define GRAY 226,226,226
 
-void get_txt_pad(const char *title,
-                 uint32_t    title_len __attribute__((unused)),
-                 int x1,int x2, int y1, int y2, char *mypin, char nb_pin);
+/*
+ * request a text content to the user (blocking call while the user
+ * is writing)
+ */
+void pin_request_string(const char *title,
+                        uint32_t    title_len,
+                        int x1, int x2, int y1, int y2,
+                        char *string, uint8_t maxlen);
 
-uint8_t get_pin(const char *title,
-             uint32_t    title_len,
-             int x1,int x2, int y1, int y2,
-             char *mypin, uint8_t max_pin_len);
+/*
+ * request a numerical content to the user (blocking call while the
+ * user is writing)
+ */
+uint8_t pin_request_digits(const char *title,
+                           uint32_t    title_len,
+                           int x1,int x2, int y1, int y2,
+                           char *mypin, uint8_t max_pin_len);
 
-void draw_pin(int x1,int x2, int y1, int y2);
-void draw_txt_pad(int x1,int x2, int y1, int y2, uint8_t offset);
-extern const int font_width;
-extern const int font_height;
-extern char pin[4];
-extern unsigned char nbpin;
+/*
+ * request a validation of a string (the string is shown, the user
+ * has to say 'OK' or 'KO'.
+ * The validation menu title is using title arg to complete the
+ * 'please confirm' string
+ */
+uint8_t pin_request_string_validation(const char *title,
+                                      const char *string,
+                                      uint8_t string_len);
 
-uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len);
 #endif
