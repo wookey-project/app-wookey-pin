@@ -7,7 +7,6 @@
 
 #include "autoconf.h"
 
-#define CONFIG_LOGO_LOCK 0
 
 #include "api/syscall.h"
 #include "api/print.h"
@@ -17,8 +16,12 @@
 # include "libconsole.h"
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 # include "gui_pin.h"
+#ifdef MODE_FW
 # include "lock2.h"
+#endif
+#ifdef MODE_FW
 # include "fail.h"
+#endif
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
@@ -717,14 +720,15 @@ int _main(uint32_t task_id)
     menu_init(240, 320, &callbacks);
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
+#ifdef MODE_FW
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
-
-# if CONFIG_LOGO_LOCK
+#else
 	tft_setfg(0,0,0);
 	tft_setbg(249,249,249);
 	tft_set_cursor_pos(0,260);
 	tft_puts(" Wookey LOCKED");
-# endif
+#endif
+
 #elif CONFIG_APP_PIN_INPUT_USART
     /*
      * in the specific case of usart, the readline() function allocate
