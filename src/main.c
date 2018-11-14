@@ -122,6 +122,8 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     char * pin = 0;
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
+    mode = mode;
+    type = type;
     char pin[PIN_MAX_LEN + 1] = { 0 };
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #endif
@@ -176,7 +178,17 @@ int handle_pin_request(uint8_t mode, uint8_t type)
         }
     }
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-    memcpy(pin, CONFIG_APP_PIN_MOCKUP_PIN_VALUE, 4);
+    if (mode == SC_PET_PIN) {
+        if (type == SC_REQ_AUTHENTICATE) {
+            memcpy(pin, CONFIG_APP_PIN_MOCKUP_PET_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN);
+            pin_len = CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN;
+        }
+    } else if (mode == SC_USER_PIN) {
+        if (type == SC_REQ_AUTHENTICATE) {
+            memcpy(pin, CONFIG_APP_PIN_MOCKUP_USER_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN);
+            pin_len = CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN;
+        }
+    }
 #else
 # error "input type must be set"
 #endif
@@ -243,6 +255,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
      * Depending on what SMART said, indicate the current status
      *******************************************************/
 
+#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
     /* Updating remaining tries with what the token said */
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) {
         if (mode == SC_USER_PIN && type == SC_REQ_AUTHENTICATE)
@@ -250,6 +263,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
             update_remaining_tries(ipc_sync_cmd_data.data.u32[0]);
         }
     }
+#endif
 
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd_data.state == SYNC_ACKNOWLEDGE)
     {
@@ -289,6 +303,11 @@ int handle_petname_request(void)
     /*******************************************
      * get pet name from user
      ******************************************/
+    struct sync_command_data ipc_sync_cmd_data = { 0 };
+    //logsize_t size = 0;
+    //uint8_t id = 0;
+    uint8_t ret = 0;
+
 #ifdef CONFIG_APP_PIN_INPUT_USART
     char *petname = 0;
     uint8_t petname_len = 0;
@@ -309,10 +328,10 @@ int handle_petname_request(void)
     } while (!validated);
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 
-    char *petname = 0;
-    uint8_t petname_len = 24;
+    char petname[24 + 1] = { 0 };
+    uint8_t max_petname_len = 24;
 
-    get_txt_pad("New pet name", 12, 0,240, 0, 320, petname, petname_len);
+    get_txt_pad("New pet name", 12, 0,240, 0, 320, petname, max_petname_len);
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_set_cursor_pos(20,160);
@@ -322,6 +341,8 @@ int handle_petname_request(void)
     tft_set_cursor_pos(20,190);
     tft_puts("  registered ");
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
+    char petname[24 + 1] = { 0 };
+    memcpy(petname, "Dark Vador", 10);
     /* mockup mode has no pet name check */
     //const char *petname = "johny";
     //uint8_t pet_name_len = 5;
@@ -329,17 +350,70 @@ int handle_petname_request(void)
 # error "input mode must be set"
 #endif
 
+    printf("new petname is %s\n", petname);
     /*******************************************
      * send pet name to SMART
      ******************************************/
+    ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
+    ipc_sync_cmd_data.state = SYNC_DONE;
+    // TODO: set data_size please
+    ipc_sync_cmd_data.data_size = strlen(petname);
+    memcpy(ipc_sync_cmd_data.data.u8, petname, strlen(petname));
 
-    // TODO
+    do {
+      ret = sys_ipc(IPC_SEND_SYNC, id_smart, sizeof(struct sync_command_data), (char*)&ipc_sync_cmd_data);
+    } while (ret == SYS_E_BUSY);
+
     /*******************************************
      * wait for SMART pet name update acknowledge
      ******************************************/
-    // TODO
+    // TODO: SMART does not acknowledge pet name update on the token
+    // This part is deactivated by now.
+#if 0
+    id = id_smart;
+    size = sizeof(struct sync_command_data);
+
+    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+
+
+    /********************************************************
+     * Depending on what SMART said, indicate the current status
+     *******************************************************/
+
+    if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd_data.state == SYNC_ACKNOWLEDGE)
+    {
+#endif
+        printf("Pet name update has been acknowledged by SMART\n");
+#ifdef CONFIG_APP_PIN_INPUT_USART
+        console_log("pet name update done\n");
+        console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+        tft_fill_rectangle(0,240,0,320,249,249,249);
+        tft_set_cursor_pos(20,160);
+        tft_setfg(0,0,0);
+        tft_setbg(249,249,249);
+        tft_puts("Pet name");
+        tft_set_cursor_pos(20,190);
+        tft_puts("updated !");
+
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+        /* nothing to do */
+#else
+# error "input mode must be set"
+#endif
+
+#if 0
+    } else {
+        printf("Smart said that Pet name update failed\n");
+        goto err;
+    }
+#endif
 
     return 0;
+#if 0
+err:
+    return 1;
+#endif
 }
 
 

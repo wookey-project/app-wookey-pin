@@ -498,7 +498,6 @@ void menu_get_events(void)
 {
     // initial menu draw
 
-    char petpin_val[17] = { 0 };
 
 //    char userpin_val[17] = { 0 };
 
@@ -608,9 +607,6 @@ void menu_get_events(void)
 #if PIN_DEBUG
                         printf("[touched] box set petpin pushed !\n");
 #endif
-                        memset(petpin_val, 0x0, 17);
-
-
                         /* inform SMART that an authentication phase is requested */
                         ipc_sync_cmd.magic = MAGIC_SETTINGS_CMD;
                         ipc_sync_cmd.state = SYNC_WAIT;
@@ -641,7 +637,6 @@ void menu_get_events(void)
 #if PIN_DEBUG
                         printf("[touched] box set petname pushed !\n");
 #endif
-                        memset(petpin_val, 0x0, 33);
 
                         /* inform SMART that an authentication phase is requested */
                         ipc_sync_cmd.magic = MAGIC_SETTINGS_CMD;

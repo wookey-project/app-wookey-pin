@@ -115,19 +115,32 @@ endchoice
 
 if APP_PIN_INPUT_MOCKUP
 
-config APP_PIN_MOCKUP_PIN_VALUE
-   string "Mockup pin value"
+config APP_PIN_MOCKUP_USER_PIN_VALUE
+   string "Mockup user pin value"
    ---help---
-   Pin value that should be used in replacement of the PIN
+   User Pin value that should be used in replacement of the PIN
    entered by the user.
    You can enter directly the numeric pin value here.
 
-config APP_PIN_MOCKUP_PETPIN_VALUE
+config APP_PIN_MOCKUP_USER_PIN_LEN
+   int "Mockup user pin length"
+   ---help---
+   User Pin length that should be used in replacement of the
+   PIN length entered by the user.
+
+config APP_PIN_MOCKUP_PET_PIN_VALUE
    string "Mockup pet-pin value"
    ---help---
    Pet Pin value that should be used in replacement of the
    Pet PIN entered by the user.
    You can enter directly the numeric value here.
+
+config APP_PIN_MOCKUP_PET_PIN_LEN
+   int "Mockup user pin length"
+   ---help---
+   Pet Pin length that should be used in replacement of the
+   PIN length entered by the user.
+
 
 endif
 

@@ -520,10 +520,9 @@ void get_txt_pad(const char *title,
               y1+lasty*vspace+lasty*vsize+vsize-2,key);
         }
       }
-      if (colx > x2 - 60 && colx < x2 &&
-              coly > y1 && coly < y1 + 58) { // is okay button ?
+      if (posx > x2 - 60 && posx < x2 &&
+              posy > y1 && posy < y1 + 58) { // is okay button ?
           return;
-
       }
       //Is touch currently out of range
       if( colx==-1 || coly==-1)
@@ -570,6 +569,7 @@ void get_txt_pad(const char *title,
 	y1+lasty*vspace+lasty*vsize+2,
 	y1+lasty*vspace+lasty*vsize+vsize-2, "<<",WOOKEY_ORANGE);
       //Last touch was for correcting
+#if 0
       if(nb_given>0)
       {
 	mypin[nb_given]=0;
@@ -578,6 +578,7 @@ void get_txt_pad(const char *title,
       printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
 #endif
       }
+#endif
       draw_txt_pad(x1,x2,y1,y2, offset);
     }
     else if ((lasty==4) && (lastx==2))
@@ -596,8 +597,10 @@ void get_txt_pad(const char *title,
 #if PIN_DEBUG
         printf("nb_given %d nb_pin %d\n",nb_given,nb_pin);
 #endif
+#if 0
         if(nb_given == nb_pin)
             return;	
+#endif
       draw_txt_pad(x1,x2,y1,y2, offset);
     } else {
         mypin[nb_given++]=key[0];
