@@ -18,4 +18,11 @@ void draw_background(void);
 
 void update_remaining_tries(uint32_t val);
 
+void draw_menubox2(int x1, int x2, int y1, int y2,
+                   char *c,
+                   uint8_t r, uint8_t g, uint8_t b,
+                   const uint8_t *icon_colormap,
+                   const uint8_t *icon,
+                   const uint32_t icon_size);
+
 #endif

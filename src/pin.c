@@ -9,6 +9,7 @@
 #include "api/print.h"
 #include "api/random.h"
 #include "pin.h"
+#include "menu.h"
 extern const int font_width;
 extern const int font_height;
 extern const int font_blankskip;
@@ -142,7 +143,7 @@ void pin_draw_case(int x1,int x2, int y1, int y2, const char *c,
 
 uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len)
 {
-    pet_name_len = pet_name_len;
+  pet_name_len = pet_name_len;
   tft_setfg(200,200,200);
   tft_setbg(5,0,5);
   tft_set_cursor_pos(0,29);
@@ -155,9 +156,13 @@ uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len)
   tft_set_cursor_pos(0,29);
   tft_puts("  pet name  ");
 
-  pin_draw_case(10, 230, 70, 190, petname, 245, 245, 245);
-  pin_draw_case(10, 230, 200, 240, "    OK     ", 0, 245, 0);
-  pin_draw_case(10, 230, 250, 290, "  Invalid  ", 245, 0, 0);
+  pin_draw_case(10, 230, 70, 230, petname, 245, 245, 245);
+
+  tft_fill_rectangle(8, 82, 248, 302, 240,240,240);
+  pin_draw_case(10, 80, 250, 300, "OK", WOOKEY_GREEN);
+
+  tft_fill_rectangle(158, 232, 248, 302, 240,240,240);
+  pin_draw_case(160, 230, 250, 300, "KO", WOOKEY_RED);
 
   while (1) {
     touch_read_X_DFR();//Ensures that PenIRQ is enabled
@@ -181,13 +186,13 @@ uint8_t get_petname_validation(const char *petname, uint8_t pet_name_len)
       posy=touch_getx();
       posx=touch_gety();
 
-      if (posx > 10 && posx < 230 && posy > 200 && posy < 240) {
+      if (posx > 10 && posx < 80 && posy > 250 && posy < 300) {
 
           /* OK pushed */
           return 0;
       }
 
-      if (posx > 10 && posx < 230 && posy > 250 && posy < 290) {
+      if (posx > 160 && posx < 230 && posy > 250 && posy < 300) {
           /* Invalid pushed */
           return 1;
       }
@@ -358,13 +363,46 @@ void pin_draw_case(int x1,int x2, int y1, int y2, const char *c,
   const int char_width=font_width/128;
   int posx,posy;
   tft_setbg(r,g,b);
+  uint8_t chars_per_line;
+  uint8_t numlines;
   //tft_setfg(0,0,0);
   tft_fill_rectangle(x1,x2,y1,y2,r,g,b);
-  posx=(x2-x1-strlen(c)*char_width)/2;
+  // 1) calculate the number of char per line in the case
+  chars_per_line=((x2 - 5 - x1 + 5)/char_width);
+  // 2) calculate the number of lines
+  numlines=(strlen(c)/chars_per_line) + 1;
+  // 3) calculate the position of the first line depending on
+  // the number of lines
+  //  ... the middle line...
   posy=(y2-y1-font_height/2)/2;
-  tft_set_cursor_pos(x1+posx,posy+y1);
-  tft_puts((char*)c);
+  for (uint8_t i = 1; i < numlines; ++i) {
+      // go up of 1 line
+      posy -= font_height/2;
+  }
+  uint8_t missing_chars = strlen(c);
+  uint8_t i = 0;
+  char line[chars_per_line + 1];
+  memset(line, 0x0, chars_per_line + 1);
+  do {
+      if (missing_chars > chars_per_line) {
+          memcpy(line, &(c[i]), chars_per_line);
+          posx=(x2-x1-chars_per_line*char_width)/2;
+          tft_set_cursor_pos(x1+posx,posy+y1);
+          tft_puts((char*)line);
+          // print only a part of the string
+          missing_chars -= chars_per_line;
+          i += chars_per_line;
+      } else {
+          posx=(x2-x1-strlen(&(c[i]))*char_width)/2;
+          tft_set_cursor_pos(x1+posx,posy+y1);
+          tft_puts((char*)&(c[i]));
+          missing_chars = 0;
+      }
+      posy += font_height/2;
+  } while (missing_chars > 0);
+//  posx=(x2-x1-strlen(c)*char_width)/2;
 }
+
 void pin_normal_case(int x1,int x2, int y1, int y2, char *c)
 {
    pin_draw_case(x1,x2,y1,y2,c,WOOKEY_BLUE);

@@ -188,18 +188,22 @@ void draw_menubox2(int x1, int x2, int y1, int y2,
 {
     const int char_width = font_width/128;
     int posx;
+    uint8_t iconvfill = 0;
   // create the box color
   tft_fill_rectangle(x1,x2,y1,y2,0,0,0);
   tft_fill_rectangle(x1+2,x2-2,y1+2,y2-2,r,g,b);
   // add the box icon
-  tft_rle_image(x1 + (((x2 - x1)-45)/2),
-                y1 + (((y2 - y1)-45)/2), 45, 45,
-          icon_colormap, icon, icon_size);
+  if (icon) {
+      tft_rle_image(x1 + (((x2 - x1)-45)/2),
+              y1 + (((y2 - y1)-45)/2), 45, 45,
+              icon_colormap, icon, icon_size);
+      iconvfill = 48;
+  }
   // add the box title
   //
   if (c) {
       posx=(x2-x1-strlen(c)*char_width)/2;
-      tft_set_cursor_pos(x1+posx,(y1 + (((y2 - y1)-45)/2 + 48)));
+      tft_set_cursor_pos(x1+posx,(y1 + (((y2 - y1)-45)/2 + iconvfill)));
       tft_setfg(255,255,255);
       tft_setbg(r,g,b);
       tft_puts(c);
