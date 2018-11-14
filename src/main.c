@@ -13,21 +13,20 @@
 #include "api/print.h"
 #include "libusart.h"
 
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if CONFIG_APP_PIN_INPUT_USART
 # include "libconsole.h"
-#else
-# include "pin.h"
-# if CONFIG_LOGO_LOCK
-#  include "lock.h"
-# else
-#  include "lock2.h"
-# endif
-# include "menu.h"
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+# include "gui_pin.h"
+# include "gui_menu.h"
+# include "lock2.h"
 # include "fail.h"
-//#include "peur.h"
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+  /* nothing to include */
+#else
+# error "please specify input mode"
 #endif
 
 #include "libshell.h"

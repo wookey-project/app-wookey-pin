@@ -102,6 +102,7 @@ choice
       USART interface
     config APP_PIN_INPUT_SCREEN
       bool "PIN is asked through graphical interface"
+      select USR_LIB_GUI
       ---help---
       User interaction for PIN ask is done using dedicated
       screen/touchscreen couple
