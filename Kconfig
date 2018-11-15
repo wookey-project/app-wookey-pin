@@ -137,7 +137,7 @@ config APP_PIN_MOCKUP_PET_PIN_VALUE
    You can enter directly the numeric value here.
 
 config APP_PIN_MOCKUP_PET_PIN_LEN
-   int "Mockup user pin length"
+   int "Mockup pet-pin length"
    ---help---
    Pet Pin length that should be used in replacement of the
    PIN length entered by the user.
