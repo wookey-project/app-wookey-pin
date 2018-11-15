@@ -3,4 +3,6 @@
 
 #define PIN_DEBUG 0
 
+uint8_t get_smart_id(void);
+
 #endif
