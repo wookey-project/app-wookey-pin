@@ -13,9 +13,14 @@
 #include "libusart.h"
 
 #if CONFIG_APP_PIN_INPUT_USART
+
 # include "libconsole.h"
+# include "libshell.h"
+
 #elif CONFIG_APP_PIN_INPUT_SCREEN
+
 # include "gui_pin.h"
+# include "gui_menu.h"
 #ifdef MODE_FW
 # include "lock2.h"
 #endif
@@ -25,21 +30,27 @@
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
+
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
   /* nothing to include */
 #else
 # error "please specify input mode"
 #endif
 
-/* enum & struct of gui_menu.h are requested in any mode */
-#include "gui_menu.h"
 
-#include "libshell.h"
 #include "wookey_ipc.h"
 #include "main.h"
 
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
+
+#ifndef CONFIG_APP_PIN_INPUT_SCREEN
+/* when not in screen mode, the authentication mode is hosted locally */
+enum authentication_mode {
+  FULL_AUTHENTICATION_MODE,
+  LITE_AUTHENTICATION_MODE
+};
+#endif
 
 uint8_t id_smart;
 
@@ -569,6 +580,7 @@ err:
     return 1;
 }
 
+#if CONFIG_APP_PIN_INPUT_SCREEN
 uint8_t handle_settings_request(t_box signal)
 {
     struct sync_command_data ipc_sync_cmd = { 0 };
@@ -617,6 +629,7 @@ uint8_t handle_settings_request(t_box signal)
 err:
     return 1;
 }
+#endif
 
 
 /******************************************************
