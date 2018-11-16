@@ -109,8 +109,14 @@ int _main(uint32_t task_id)
 #endif
 
     /* get back smart task id, as we communicate with it */
-
     ret = sys_init(INIT_GETTASKID, "smart", &id_smart);
+    if (ret != SYS_E_DONE) {
+        // DFU mode ?
+        printf("DFU mode, looking for smart\n");
+        ret = sys_init(INIT_GETTASKID, "dfusmart", &id_smart);
+    } else {
+        printf("FW mode, looking for smart\n");
+    }
     if (ret != SYS_E_DONE) {
       printf("gettaskid fails with %s\n", strerror(ret));
       goto err;

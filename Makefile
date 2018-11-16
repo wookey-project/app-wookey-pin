@@ -72,10 +72,10 @@ LDSCRIPT_NAME = $(APP_BUILD_DIR)/$(APP_NAME).ld
 # file to (dist)clean
 
 # first, objects and compilation related
-TODEL_CLEAN += $(OBJ) $(DEP) $(LDSCRIPT_NAME)
+TODEL_CLEAN += $(OBJ) $(DEP)
 
 # the overall target content
-TODEL_DISTCLEAN += $(APP_BUILD_DIR)
+TODEL_DISTCLEAN += $(APP_BUILD_DIR) $(LDSCRIPT_NAME)
 
 .PHONY: app
 
