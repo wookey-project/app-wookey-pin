@@ -21,12 +21,8 @@
 
 # include "gui_pin.h"
 # include "gui_menu.h"
-#ifdef MODE_FW
 # include "lock2.h"
-#endif
-#ifdef MODE_FW
 # include "fail.h"
-#endif
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
@@ -57,6 +53,7 @@ uint8_t get_smart_id(void)
  *****************************************************/
 int _main(uint32_t task_id)
 {
+    bool mode_fw = false;
     uint8_t id;
     uint8_t ret;
 
@@ -116,6 +113,7 @@ int _main(uint32_t task_id)
         ret = sys_init(INIT_GETTASKID, "dfusmart", &id_smart);
     } else {
         printf("FW mode, looking for smart\n");
+        mode_fw = true;
     }
     if (ret != SYS_E_DONE) {
       printf("gettaskid fails with %s\n", strerror(ret));
@@ -156,14 +154,7 @@ int _main(uint32_t task_id)
     menu_init(240, 320, &callbacks);
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
-#ifdef MODE_FW
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
-#else
-	tft_setfg(0,0,0);
-	tft_setbg(249,249,249);
-	tft_set_cursor_pos(0,260);
-	tft_puts(" Wookey LOCKED");
-#endif
 
 #elif CONFIG_APP_PIN_INPUT_USART
     /*
