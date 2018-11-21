@@ -151,7 +151,7 @@ int _main(uint32_t task_id)
         .handle_auth     = handle_authentication,
         .handle_pin_cmd  = handle_full_pin_cmd_request
     };
-    menu_init(240, 320, &callbacks);
+    menu_init(240, 320, &callbacks, mode_fw);
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
