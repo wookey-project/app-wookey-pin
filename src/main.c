@@ -45,6 +45,8 @@ uint8_t get_smart_id(void)
     return id_smart;
 }
 
+bool mode_fw = false;
+
 /******************************************************
  * The task main function, called by do_starttask().
  * This is the user application code entrypoint after
@@ -53,7 +55,6 @@ uint8_t get_smart_id(void)
  *****************************************************/
 int _main(uint32_t task_id)
 {
-    bool mode_fw = false;
     uint8_t id;
     uint8_t ret;
 

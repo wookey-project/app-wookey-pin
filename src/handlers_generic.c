@@ -3,7 +3,7 @@
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
-
+extern bool mode_fw;
 
 int handle_pin_request(uint8_t mode, uint8_t type)
 {
@@ -83,13 +83,23 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     if (mode == SC_PET_PIN) {
         if (type == SC_REQ_AUTHENTICATE) {
-            memcpy(pin, CONFIG_APP_PIN_MOCKUP_PET_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN);
-            pin_len = CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN;
+            if (mode_fw) {
+                memcpy(pin, CONFIG_APP_PIN_MOCKUP_PET_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN);
+                pin_len = CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN;
+            } else { /* mode DFU */
+                memcpy(pin, CONFIG_APP_PIN_MOCKUP_DFU_PET_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_DFU_PET_PIN_LEN);
+                pin_len = CONFIG_APP_PIN_MOCKUP_DFU_PET_PIN_LEN;
+            }
         }
     } else if (mode == SC_USER_PIN) {
         if (type == SC_REQ_AUTHENTICATE) {
-            memcpy(pin, CONFIG_APP_PIN_MOCKUP_USER_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN);
-            pin_len = CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN;
+            if (mode_fw) {
+                memcpy(pin, CONFIG_APP_PIN_MOCKUP_USER_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN);
+                pin_len = CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN;
+            }else {
+                memcpy(pin, CONFIG_APP_PIN_MOCKUP_DFU_USER_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_DFU_USER_PIN_LEN);
+                pin_len = CONFIG_APP_PIN_MOCKUP_DFU_USER_PIN_LEN;
+            }
         }
     }
 #else

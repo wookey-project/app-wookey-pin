@@ -143,6 +143,32 @@ config APP_PIN_MOCKUP_PET_PIN_LEN
    PIN length entered by the user.
 
 
+config APP_PIN_MOCKUP_DFU_USER_PIN_VALUE
+   string "Mockup DFU user pin value"
+   ---help---
+   DFU User Pin value that should be used in replacement of the PIN
+   entered by the user.
+   You can enter directly the numeric pin value here.
+
+config APP_PIN_MOCKUP_DFU_USER_PIN_LEN
+   int "Mockup DFU user pin length"
+   ---help---
+   DFU User Pin length that should be used in replacement of the
+   PIN length entered by the user.
+
+config APP_PIN_MOCKUP_DFU_PET_PIN_VALUE
+   string "Mockup DFU pet-pin value"
+   ---help---
+   DFU Pet Pin value that should be used in replacement of the
+   Pet PIN entered by the user.
+   You can enter directly the numeric value here.
+
+config APP_PIN_MOCKUP_DFU_PET_PIN_LEN
+   int "Mockup DFU pet-pin length"
+   ---help---
+   DFU Pet Pin length that should be used in replacement of the
+   PIN length entered by the user.
+
 endif
 
 if APP_PIN_INPUT_USART
