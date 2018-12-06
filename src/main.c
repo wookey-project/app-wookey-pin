@@ -45,7 +45,12 @@ uint8_t get_smart_id(void)
     return id_smart;
 }
 
-bool mode_fw = false;
+static volatile bool cur_mode = MODE_FW;
+
+t_boot_mode get_mode(void)
+{
+    return cur_mode;
+}
 
 /******************************************************
  * The task main function, called by do_starttask().
@@ -112,9 +117,10 @@ int _main(uint32_t task_id)
         // DFU mode ?
         printf("DFU mode, looking for smart\n");
         ret = sys_init(INIT_GETTASKID, "dfusmart", &id_smart);
+        cur_mode = MODE_DFU;
     } else {
         printf("FW mode, looking for smart\n");
-        mode_fw = true;
+        cur_mode = MODE_FW;
     }
     if (ret != SYS_E_DONE) {
       printf("gettaskid fails with %s\n", strerror(ret));
@@ -152,7 +158,7 @@ int _main(uint32_t task_id)
         .handle_auth     = handle_authentication,
         .handle_pin_cmd  = handle_full_pin_cmd_request
     };
-    menu_init(240, 320, &callbacks, mode_fw);
+    menu_init(240, 320, &callbacks, cur_mode);
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
