@@ -14,7 +14,7 @@
 # include "libconsole.h"
 # include "libshell.h"
 
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 
 # include "gui_pin.h"
 # include "gui_menu.h"
@@ -31,11 +31,13 @@
 
 
 #ifndef CONFIG_APP_PIN_INPUT_SCREEN
+# ifndef CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 /* when not in screen mode, the authentication mode is hosted locally */
 enum authentication_mode {
   FULL_AUTHENTICATION_MODE,
   LITE_AUTHENTICATION_MODE
 };
+# endif
 #endif
 
 
@@ -48,9 +50,13 @@ int handle_petname_confirmation(const char *petname);
 
 uint8_t handle_full_pin_cmd_request(void);
 
+int handle_dfu_confirmation(char *dfuhdr);
+
 uint8_t handle_authentication(enum authentication_mode authmode);
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
+void handle_external_events(void);
+
+#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 uint8_t handle_settings_request(t_box signal);
 #endif
 

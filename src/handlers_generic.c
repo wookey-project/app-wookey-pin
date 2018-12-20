@@ -3,6 +3,40 @@
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
+
+void handle_external_events(void)
+{
+    struct sync_command_data sync_command_ack = { 0 };
+    logsize_t size = sizeof(struct sync_command_data);
+    uint8_t id = get_smart_id();
+
+    if ((sys_ipc(IPC_RECV_ASYNC, &id, &size, (char*)&sync_command_ack)) == SYS_E_DONE) {
+
+        switch (sync_command_ack.magic) {
+            case MAGIC_DFU_HEADER_SEND:
+                {
+                    /* requesting user validation for header, from now on,
+                     * the printed menu will be the DFU menu (no access
+                     * to settings or status)
+                     */
+                    handle_dfu_confirmation((char*)sync_command_ack.data.u8);
+                    break;
+                }
+
+            case MAGIC_DFU_DWNLOAD_FINISHED:
+                {
+                    /* The DFU download is now finished (successfully or not)
+                     * the user is informed of the result and can go back
+                     * to the global menu with a return button
+                     */
+                    break;
+                }
+        }
+    }
+    return;
+
+}
+
 int handle_pin_request(uint8_t mode, uint8_t type)
 {
     uint8_t pin_len;
@@ -327,6 +361,80 @@ err:
     return 1;
 #endif
 }
+struct __packed dfuhdr_t {
+    uint32_t magic;
+    uint32_t version;
+};
+
+
+/******************************************************************
+ * Handle DFU firmware confirmation from smart, including
+ * - Pet name validation by user (or autovalid in mockup mode)
+ * - Pet name validation response (Ack/Nack) to smart
+ *****************************************************************/
+int handle_dfu_confirmation(char *dfuhdr)
+{
+    uint8_t id_smart = get_smart_id();
+    uint8_t ret;
+    logsize_t size = 0;
+
+    struct sync_command      ipc_sync_cmd;
+    uint8_t dfu_hdr_len = 8;
+    for (uint8_t i = 0; i < dfu_hdr_len; ++i) {
+        dfuhdr[i] += '0'; /* passing to printable value */
+    }
+    dfuhdr[dfu_hdr_len] = 0;
+
+    printf("DFU: requesting user confirmation for %s\n", dfuhdr);
+#ifdef CONFIG_APP_PIN_INPUT_USART
+    char *ack = 0;
+    uint8_t ack_len = 0;
+    dfuhdr_t *hdr = dfuhdr;
+
+    console_log("DFU header is:\n");
+    console_log("- Magic: %x\n", hdr->magic);
+    console_log("- version: %x\n", hdr->version);
+    console_log("Is it Okay (y/n)?\n");
+    console_flush();
+    shell_readline(&ack, (uint32_t*)&ack_len); /*FIXME: update API, set string... and size */
+    if (ack_len == 1 && ack[0] == 'n') {
+        console_log("Invalid DFU file !!!\n");
+        console_flush();
+#elif CONFIG_APP_PIN_INPUT_SCREEN
+    if (pin_request_string_validation("DFU header", dfuhdr, dfu_hdr_len)) {
+        tft_fill_rectangle(0,240,0,320,249,249,249);
+        tft_set_cursor_pos(20,160);
+        tft_setfg(0,0,0);
+        tft_setbg(249,249,249);
+        tft_puts(" Invalid DFU ");
+        tft_set_cursor_pos(20,190);
+        tft_puts("   Header!   ");
+#elif CONFIG_APP_PIN_INPUT_MOCKUP
+    if (0) {
+        /* mockup mode has no pet name check */
+        dfuhdr = dfuhdr;
+#else
+# error "input mode must be set"
+#endif
+        printf("user said DFU hdr is invalid!\n");
+        ipc_sync_cmd.magic = MAGIC_DFU_HEADER_INVALID;
+        ipc_sync_cmd.state = SYNC_FAILURE;
+        size = sizeof(struct sync_command);
+        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+        goto err;
+
+    } else {
+        printf("user said DFU hdr is valid!\n");
+        ipc_sync_cmd.magic = MAGIC_DFU_HEADER_VALID;
+        ipc_sync_cmd.state = SYNC_ACKNOWLEDGE;
+        size = sizeof(struct sync_command);
+        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+    }
+
+    return 0;
+err:
+    return 1;
+}
 
 
 /******************************************************************
@@ -527,7 +635,7 @@ err:
     return 1;
 }
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 uint8_t handle_settings_request(t_box signal)
 {
     uint8_t id_smart = get_smart_id();

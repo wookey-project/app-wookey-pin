@@ -116,6 +116,13 @@ endchoice
 
 if APP_PIN_INPUT_MOCKUP
 
+config APP_PIN_MOCKUP_SHOW_MENU
+   bool "Show menu in mockup mode"
+   ---help---
+   Show graphical interface, only mockup authentication phase.
+   This allows testing user interaction after the authentication
+   phase without requesting manual authentication.
+
 config APP_PIN_MOCKUP_USER_PIN_VALUE
    string "Mockup user pin value"
    ---help---

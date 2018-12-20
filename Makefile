@@ -51,6 +51,9 @@ LDFLAGS += $(AFLAGS) -fno-builtin -nostdlib -nostartfiles
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
 LD_LIBS += -lspi -ltouch -ltft -lgui -lstd
 endif
+ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
+LD_LIBS += -lspi -ltouch -ltft -lgui -lstd
+endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
 LD_LIBS += -lstd -lshell -lconsole -lusart
 endif

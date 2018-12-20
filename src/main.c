@@ -28,7 +28,19 @@
 # include "libtft.h"
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-  /* nothing to include */
+
+# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+
+# include "gui_pin.h"
+# include "gui_menu.h"
+# include "lock2.h"
+# include "fail.h"
+# include "libspi.h"
+# include "libtouch.h"
+# include "libtft.h"
+
+# endif
+
 #else
 # error "please specify input mode"
 #endif
@@ -104,8 +116,26 @@ int _main(uint32_t task_id)
 
     printf("Registered SPI1, Touchscreen and TFT.\n");
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
+    /* mockup mode: external I/O only if requested */
+# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 
-    /* mockup mode: no external I/O */
+    if (spi1_early_init()) {
+        printf("ERROR: registering SPI1 failed.\n");
+        while (1)
+            ;
+    }
+    if (tft_early_init()) {
+        printf("ERROR: registering TFT failed.\n");
+        while (1)
+            ;
+    }
+    if (touch_early_init()) {
+        printf("ERROR: registering Touchscreen failed.\n");
+        while (1)
+            ;
+    }
+
+# endif
 
 #else
 # error "input mode must be set"
@@ -156,7 +186,8 @@ int _main(uint32_t task_id)
     cb_menu_callbacks_t callbacks = {
         .handle_settings = handle_settings_request,
         .handle_auth     = handle_authentication,
-        .handle_pin_cmd  = handle_full_pin_cmd_request
+        .handle_pin_cmd  = handle_full_pin_cmd_request,
+        .handle_externals= handle_external_events
     };
     menu_init(240, 320, &callbacks, cur_mode);
 
@@ -177,7 +208,27 @@ int _main(uint32_t task_id)
     console_log("[USART4] Pin initialized usart...\n");
     console_flush();
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-    /* nothing to do */
+
+# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+    /* menu activation only if requested */
+    if (tft_init()) {
+        printf("error during TFT initialization!\n");
+    }
+    if (touch_init()) {
+        printf("error during Touch initialization!\n");
+    }
+    cb_menu_callbacks_t callbacks = {
+        .handle_settings = handle_settings_request,
+        .handle_auth     = handle_authentication,
+        .handle_pin_cmd  = handle_full_pin_cmd_request
+    };
+    menu_init(240, 320, &callbacks, cur_mode);
+
+    tft_fill_rectangle(0,240,0,320,249,249,249);
+    tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+
+# endif
+
 #else
 # error "input type must be set"
 #endif
@@ -234,15 +285,17 @@ int _main(uint32_t task_id)
      * menus (settings, state, wipe, etc.) 
      ************************************************************/
 
+
 #if    CONFIG_APP_PIN_INPUT_USART
 
     /*
      * nothing to do. The advanced settings and user interaction loop
      * is only supported in graphical mode.
      */
-    do {
-    sys_yield();
-    } while (1);
+    while (1) {
+        handle_external_events();
+        sys_yield();
+    }
 
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 
@@ -252,19 +305,26 @@ int _main(uint32_t task_id)
      * user interactions on screen
      */
 
-    menu_get_events();
+        menu_get_events();
     /* should return to do_endoftask() */
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
 
-    /* nothing to do */
-    do {
-       sys_yield();
-    } while (1);
+# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+
+        menu_get_events();
+# else
+    /* nothing to do except handling IPC */
+    while (1) {
+        handle_external_events();
+        sys_yield();
+    }
+# endif
 
 #else
 # error "input mode must be set"
 #endif
+
     return 0;
 err:
     while (1);
