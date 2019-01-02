@@ -143,10 +143,13 @@ int _main(uint32_t task_id)
 
     /* get back smart task id, as we communicate with it */
     ret = sys_init(INIT_GETTASKID, "smart", &id_smart);
-    if (ret != SYS_E_DONE) {
+    if (id_smart == 0) {
         // DFU mode ?
         printf("DFU mode, looking for smart\n");
         ret = sys_init(INIT_GETTASKID, "dfusmart", &id_smart);
+        if (ret != SYS_E_DONE) {
+            goto err;
+        }
         cur_mode = MODE_DFU;
     } else {
         printf("FW mode, looking for smart\n");
@@ -158,6 +161,11 @@ int _main(uint32_t task_id)
     } else {
       printf("gettaskid ends with %s\n", strerror(ret));
       printf("smart is task %x !\n", id_smart);
+    }
+
+    if (id_smart == 0) {
+        printf("error while getting id smart!\n");
+        while (1);
     }
 
     /*******************************************
