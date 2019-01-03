@@ -49,16 +49,16 @@ LDFLAGS += $(AFLAGS) -fno-builtin -nostdlib -nostartfiles
 
 # project's library you whish to use...
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
-LD_LIBS += -lspi -ltouch -ltft -lgui -lstd
+LD_LIBS += -lspi -ltouch -ltft -lgui -lstd -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
-LD_LIBS += -lspi -ltouch -ltft -lgui -lstd
+LD_LIBS += -lspi -ltouch -ltft -lgui -lstd -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
-LD_LIBS += -lstd -lshell -lconsole -lusart
+LD_LIBS += -lstd -lshell -lconsole -lusart -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_MOCKUP))
-LD_LIBS += -lstd
+LD_LIBS += -lstd -lfirmware
 endif
 
 ###################################################################
