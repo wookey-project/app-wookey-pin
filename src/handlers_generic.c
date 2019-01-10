@@ -76,7 +76,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
         printf("smart is asking for Pet pin, asking user...\n");
     } else if(mode == SC_USER_PIN)  {
         printf("smart is asking for User pin, asking user...\n");
-    } 
+    }
 #endif
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
@@ -92,7 +92,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
         } else if (type == SC_REQ_MODIFY) {
             console_log("Enter new user pin code please\n");
         }
-    } 
+    }
     console_flush();
     shell_readline(&pin, (uint32_t*)&pin_len); /*FIXME: update API, set string... and size */
     console_log("pin registered!\n");
@@ -205,7 +205,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) {
         if (mode == SC_USER_PIN && type == SC_REQ_AUTHENTICATE)
         {
-            menu_update_remaining_tries(ipc_sync_cmd_data.data.u32[0]);
+            //menu_update_remaining_tries(ipc_sync_cmd_data.data.u32[0]);
         }
     }
 #endif
@@ -678,9 +678,10 @@ uint8_t handle_settings_request(t_box signal)
         }
     }
 
-    do {
-        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
-    } while (ret != SYS_E_DONE);
+    ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+    if (ret != SYS_E_DONE) {
+        printf("unable to send settings request to smart!\n");
+    }
     return 0;
 err:
     return 1;

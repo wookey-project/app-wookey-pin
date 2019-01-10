@@ -20,24 +20,26 @@
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 
 # include "gui_pin.h"
-# include "gui_menu.h"
 # include "lock2.h"
 # include "fail.h"
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
+# include "libgui.h"
+# include "gui.h"
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
 
 # if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 
 # include "gui_pin.h"
-# include "gui_menu.h"
 # include "lock2.h"
 # include "fail.h"
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
+# include "libgui.h"
+# include "gui.h"
 
 # endif
 
@@ -188,6 +190,7 @@ int _main(uint32_t task_id)
     if (touch_init()) {
         printf("error during Touch initialization!\n");
     }
+#if 0
     cb_menu_callbacks_t callbacks = {
         .handle_settings = handle_settings_request,
         .handle_auth     = handle_authentication,
@@ -195,6 +198,10 @@ int _main(uint32_t task_id)
         .handle_externals= handle_external_events
     };
     menu_init(240, 320, &callbacks, cur_mode);
+#else
+    gui_init(240,320, handle_external_events);
+    init_dfu_gui();
+#endif
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
@@ -222,15 +229,20 @@ int _main(uint32_t task_id)
     if (touch_init()) {
         printf("error during Touch initialization!\n");
     }
+#if 0
     cb_menu_callbacks_t callbacks = {
         .handle_settings = handle_settings_request,
         .handle_auth     = handle_authentication,
         .handle_pin_cmd  = handle_full_pin_cmd_request
     };
     menu_init(240, 320, &callbacks, cur_mode);
-
+#else
+    gui_init(240,320, handle_external_events);
+    init_dfu_gui();
+#endif
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+
 
 # endif
 
@@ -277,7 +289,7 @@ int _main(uint32_t task_id)
     /*******************************************
      * Starting authentication phase
      *******************************************/
-    
+
     if (handle_authentication(FULL_AUTHENTICATION_MODE)) {
         goto err;
     }
@@ -287,7 +299,7 @@ int _main(uint32_t task_id)
      * End of the full authentication mechanism.
      *
      * Starting of PIN main loop, which permit to support various
-     * menus (settings, state, wipe, etc.) 
+     * menus (settings, state, wipe, etc.)
      ************************************************************/
 
 
@@ -309,15 +321,17 @@ int _main(uint32_t task_id)
      * events. This is the pin task main loop, managing all
      * user interactions on screen
      */
+    gui_get_events();
 
-        menu_get_events();
+//        menu_get_events();
     /* should return to do_endoftask() */
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
 
 # if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 
-        menu_get_events();
+    gui_get_events();
+    //    menu_get_events();
 # else
     /* nothing to do except handling IPC */
     while (1) {

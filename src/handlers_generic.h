@@ -17,10 +17,10 @@
 #elif CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 
 # include "gui_pin.h"
-# include "gui_menu.h"
 # include "libspi.h"
 # include "libtouch.h"
 # include "libtft.h"
+# include "gui.h"
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
   /* nothing to include */
@@ -29,17 +29,10 @@
 #endif
 
 
-
-#ifndef CONFIG_APP_PIN_INPUT_SCREEN
-# ifndef CONFIG_APP_PIN_MOCKUP_SHOW_MENU
-/* when not in screen mode, the authentication mode is hosted locally */
 enum authentication_mode {
   FULL_AUTHENTICATION_MODE,
   LITE_AUTHENTICATION_MODE
 };
-# endif
-#endif
-
 
 
 int handle_pin_request(uint8_t mode, uint8_t type);
