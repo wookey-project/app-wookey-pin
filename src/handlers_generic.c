@@ -1,8 +1,11 @@
 #include "handlers_generic.h"
+#include "libgui.h"
 
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
+extern menu_desc_t main_menu;
+extern menu_desc_t dfu_menu;
 
 void handle_external_events(void)
 {
@@ -25,6 +28,20 @@ void handle_external_events(void)
 
             case MAGIC_DFU_DWNLOAD_FINISHED:
                 {
+                    printf("DFU download finished. Going back to main\n");
+                    gui_unlock_touch();
+                    gui_set_menu(main_menu);
+                    /* The DFU download is now finished (successfully or not)
+                     * the user is informed of the result and can go back
+                     * to the global menu with a return button
+                     */
+                    break;
+                }
+            case MAGIC_DFU_DWNLOAD_STARTED:
+                {
+                    gui_lock_touch();
+                    gui_set_menu(dfu_menu);
+                    printf("DFU download started, going to DFU menu\n");
                     /* The DFU download is now finished (successfully or not)
                      * the user is informed of the result and can go back
                      * to the global menu with a return button

@@ -25,6 +25,7 @@ menu_desc_t status_menu;
 menu_desc_t lock_menu;
 menu_desc_t wipe_menu;
 menu_desc_t settings_menu;
+menu_desc_t dfu_menu;
 
 tile_desc_t main_status_tile;
 tile_desc_t main_lock_tile;
@@ -38,12 +39,14 @@ tile_desc_t settings_set_userpin_tile;
 tile_desc_t settings_set_petpin_tile;
 tile_desc_t settings_set_petname_tile;
 
+tile_desc_t dfu_main_tile;
+
 #define TILE_STATUS_BG   .r = 53, .g = 88,  .b = 157
 #define TILE_SETTINGS_BG .r =  0, .g = 159, .b = 155
 #define TILE_WIPE_BG     .r = 231,.g = 92,  .b = 76
 #define TILE_LOCK_BG     .r = 141, .g = 78, .b = 159
 #define TILE_STATE_BG     49, 173,  89
-#define TILE_DFU_BG      252, 225,  59
+#define TILE_DFU_BG      .r = 252, .g = 225, .b =  59
 #define TILE_RETURN_BG   .r = 133, .g = 135, .b = 132
 #define TILE_FG          .r = 255, .g = 255, .b = 255
 
@@ -103,6 +106,10 @@ void init_dfu_gui(void)
         printf("error while declaring menu: %d\n", ret);
     }
     ret = gui_declare_menu("SETS", &settings_menu);
+    if (ret != GUI_ERR_NONE) {
+        printf("error while declaring menu: %d\n", ret);
+    }
+    ret = gui_declare_menu("DFU", &dfu_menu);
     if (ret != GUI_ERR_NONE) {
         printf("error while declaring menu: %d\n", ret);
     }
@@ -314,6 +321,29 @@ void init_dfu_gui(void)
             printf("error while declaring tile: %d\n", ret);
         }
     }
+    /*
+     * dfu menu tiles
+     */
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_DFU_BG },
+            { TILE_FG }
+        };
+
+        tile_icon_t icon = {
+            .data = dfu,
+            .size = sizeof(dfu)
+        };
+
+
+        action.type = TILE_ACTION_NONE;
+
+        ret = gui_declare_tile(dfu_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, "dfu in progress", &icon, &dfu_main_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+
 
     ret = gui_declare_default_menu(main_menu);
 
