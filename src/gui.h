@@ -12,4 +12,6 @@ typedef enum {
 
 void init_dfu_gui(void);
 
+void init_fw_gui(void);
+
 #endif/*PIN_GUI_H*/

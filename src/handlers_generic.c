@@ -7,7 +7,7 @@
 extern menu_desc_t main_menu;
 extern menu_desc_t dfu_menu;
 
-void handle_external_events(void)
+void handle_external_events(bool *need_gui_refresh)
 {
     struct sync_command_data sync_command_ack = { 0 };
     logsize_t size = sizeof(struct sync_command_data);
@@ -23,6 +23,9 @@ void handle_external_events(void)
                      * to settings or status)
                      */
                     handle_dfu_confirmation((char*)sync_command_ack.data.u8);
+                    if (need_gui_refresh) {
+                        *need_gui_refresh = true;
+                    }
                     break;
                 }
 
@@ -31,6 +34,10 @@ void handle_external_events(void)
                     printf("DFU download finished. Going back to main\n");
                     gui_unlock_touch();
                     gui_set_menu(main_menu);
+
+                    if (need_gui_refresh) {
+                        *need_gui_refresh = true;
+                    }
                     /* The DFU download is now finished (successfully or not)
                      * the user is informed of the result and can go back
                      * to the global menu with a return button
@@ -46,6 +53,10 @@ void handle_external_events(void)
                      * the user is informed of the result and can go back
                      * to the global menu with a return button
                      */
+
+                    if (need_gui_refresh) {
+                        *need_gui_refresh = true;
+                    }
                     break;
                 }
         }

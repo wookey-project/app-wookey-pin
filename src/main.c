@@ -200,7 +200,11 @@ int _main(uint32_t task_id)
     menu_init(240, 320, &callbacks, cur_mode);
 #else
     gui_init(240,320, handle_external_events);
-    init_dfu_gui();
+    if (is_in_dfu_mode()) {
+        init_dfu_gui();
+    } else if (is_in_fw_mode()) {
+        init_fw_gui();
+    }
 #endif
 
     tft_fill_rectangle(0,240,0,320,249,249,249);

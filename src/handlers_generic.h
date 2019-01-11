@@ -47,7 +47,7 @@ int handle_dfu_confirmation(char *dfuhdr);
 
 uint8_t handle_authentication(enum authentication_mode authmode);
 
-void handle_external_events(void);
+void handle_external_events(bool *need_gui_refresh);
 
 #if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 uint8_t handle_settings_request(t_box signal);
