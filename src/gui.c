@@ -134,30 +134,15 @@ void init_dfu_gui(void)
             .size = sizeof(smiley)
         };
 
+        tile_text_t text = {
+            .text = "status",
+            .align = TXT_ALIGN_CENTER
+        };
+
         action.type = TILE_ACTION_MENU;
         action.target.menu = status_menu;
 
-        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_DOUBLE, &action, "status", &icon, &main_lock_tile);
-        if (ret != GUI_ERR_NONE) {
-            printf("error while declaring tile: %d\n", ret);
-        }
-    }
-    {
-        tile_colormap_t colormap[2] = {
-            { TILE_LOCK_BG },
-            { TILE_FG }
-        };
-
-        tile_icon_t icon = {
-            .data = nlock,
-            .size = sizeof(nlock)
-        };
-
-        action.type = TILE_ACTION_CB;
-        action.target.callback = cb_handle_graphical_event;
-
-
-        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_THIRD, TILE_HEIGHT_STD, &action, "lock", &icon, &main_lock_tile);
+        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_DOUBLE, &action, &text, &icon, &main_lock_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -173,11 +158,16 @@ void init_dfu_gui(void)
             .size = sizeof(settings)
         };
 
+        tile_text_t text = {
+            .text = "sets",
+            .align = TXT_ALIGN_CENTER
+        };
+
         action.type = TILE_ACTION_MENU;
         action.target.menu = settings_menu;
 
 
-        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_THIRD, TILE_HEIGHT_STD, &action, "sets", &icon, &main_settings_tile);
+        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_THIRD, TILE_HEIGHT_STD, &action, &text, &icon, &main_settings_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -193,15 +183,46 @@ void init_dfu_gui(void)
             .size = sizeof(wipe)
         };
 
+        tile_text_t text = {
+            .text = "wipe",
+            .align = TXT_ALIGN_CENTER
+        };
+
         action.type = TILE_ACTION_MENU;
         action.target.menu = wipe_menu;
 
 
-        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_THIRD, TILE_HEIGHT_STD, &action, "wipe", &icon, &main_wipe_tile);
+        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_THIRD, TILE_HEIGHT_STD, &action, &text, &icon, &main_wipe_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
     }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_LOCK_BG },
+            { TILE_FG }
+        };
+
+        tile_icon_t icon = {
+            .data = nlock,
+            .size = sizeof(nlock)
+        };
+
+        tile_text_t text = {
+            .text = "lock",
+            .align = TXT_ALIGN_CENTER
+        };
+
+        action.type = TILE_ACTION_CB;
+        action.target.callback = cb_handle_graphical_event;
+
+
+        ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_THIRD, TILE_HEIGHT_STD, &action, &text, &icon, &main_lock_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+
 
     /*
      * status menu tiles
@@ -212,9 +233,14 @@ void init_dfu_gui(void)
             { TILE_FG }
         };
 
+        tile_text_t text = {
+            .text = "Ceci est un test de texte\nsur plusieurs lignes",
+            .align = TXT_ALIGN_LEFT
+        };
+
         action.type = TILE_ACTION_NONE;
 
-        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_DOUBLE, &action, "Ceci est un test de texte sur\nplusieurs lignes", 0, &status_main_tile);
+        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, &text, 0, &status_main_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -233,7 +259,7 @@ void init_dfu_gui(void)
         action.type = TILE_ACTION_MENU;
         action.target.menu = main_menu;
 
-        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, 0, &icon, &status_return_tile);
+        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_HALF, &action, 0, &icon, &status_return_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -253,11 +279,15 @@ void init_dfu_gui(void)
             .size = sizeof(userpin)
         };
 
+        tile_text_t text = {
+            .text = "set user pin",
+            .align = TXT_ALIGN_CENTER
+        };
 
         action.type = TILE_ACTION_CB;
         action.target.callback = cb_handle_graphical_event;
 
-        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, "set user pin", &icon, &settings_set_userpin_tile);
+        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, &text, &icon, &settings_set_userpin_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -273,11 +303,15 @@ void init_dfu_gui(void)
             .size = sizeof(petpin)
         };
 
+        tile_text_t text = {
+            .text = "set pet pin",
+            .align = TXT_ALIGN_CENTER
+        };
 
         action.type = TILE_ACTION_CB;
         action.target.callback = cb_handle_graphical_event;
 
-        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, "set pet pin", &icon, &settings_set_petpin_tile);
+        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, &text, &icon, &settings_set_petpin_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -293,10 +327,16 @@ void init_dfu_gui(void)
             .size = sizeof(petname)
         };
 
+        tile_text_t text = {
+            .text = "set pet name",
+            .align = TXT_ALIGN_CENTER
+        };
+
+
         action.type = TILE_ACTION_CB;
         action.target.callback = cb_handle_graphical_event;
 
-        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, "set pet name", &icon, &settings_set_petname_tile);
+        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, &text, &icon, &settings_set_petname_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -316,7 +356,7 @@ void init_dfu_gui(void)
         action.type = TILE_ACTION_MENU;
         action.target.menu = main_menu;
 
-        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, 0, &icon, &status_return_tile);
+        ret = gui_declare_tile(settings_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_HALF, &action, 0, &icon, &status_return_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -335,14 +375,39 @@ void init_dfu_gui(void)
             .size = sizeof(dfu)
         };
 
+        tile_text_t text = {
+            .text = "dfu in progress",
+            .align = TXT_ALIGN_CENTER
+        };
+
 
         action.type = TILE_ACTION_NONE;
 
-        ret = gui_declare_tile(dfu_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, "dfu in progress", &icon, &dfu_main_tile);
+        ret = gui_declare_tile(dfu_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, &text, &icon, &dfu_main_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
     }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_DFU_BG },
+            { TILE_FG }
+        };
+
+        tile_text_t text = {
+            .text = "[downloading  ]",
+            .align = TXT_ALIGN_LEFT
+        };
+
+
+        action.type = TILE_ACTION_NONE;
+
+        ret = gui_declare_tile(dfu_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_HALF, &action, &text, 0, &dfu_main_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+
 
 
     ret = gui_declare_default_menu(main_menu);
