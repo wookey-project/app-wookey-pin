@@ -386,15 +386,9 @@ void init_dfu_gui(void)
             .size = sizeof(dfu)
         };
 
-        tile_text_t text = {
-            .text = "dfu in progress",
-            .align = TXT_ALIGN_CENTER
-        };
-
-
         action.type = TILE_ACTION_NONE;
 
-        ret = gui_declare_tile(dfu_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, &text, &icon, &dfu_main_tile);
+        ret = gui_declare_tile(dfu_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, 0, &icon, &dfu_main_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }
@@ -406,7 +400,7 @@ void init_dfu_gui(void)
         };
 
         tile_text_t text = {
-            .text = "[downloading  ]",
+            .text = "dfu in progress",
             .align = TXT_ALIGN_LEFT
         };
 
