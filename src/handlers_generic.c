@@ -445,6 +445,9 @@ int handle_dfu_confirmation(char *dfuhdr)
 # error "input mode must be set"
 #endif
         printf("user said DFU hdr is invalid!\n");
+#ifndef CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+        gui_force_refresh();
+#endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_INVALID;
         ipc_sync_cmd.state = SYNC_FAILURE;
         size = sizeof(struct sync_command);
@@ -453,6 +456,9 @@ int handle_dfu_confirmation(char *dfuhdr)
 
     } else {
         printf("user said DFU hdr is valid!\n");
+#ifndef CONFIG_APP_PIN_MOCKUP
+        gui_force_refresh();
+#endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_VALID;
         ipc_sync_cmd.state = SYNC_ACKNOWLEDGE;
         size = sizeof(struct sync_command);
