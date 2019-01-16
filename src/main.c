@@ -208,7 +208,12 @@ int _main(uint32_t task_id)
 #endif
 
     tft_fill_rectangle(0,240,0,320,249,249,249);
+
+    if (is_in_fw_mode()) {
     tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+    } else {
+    tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
+    }
 
 #elif CONFIG_APP_PIN_INPUT_USART
     /*
@@ -245,7 +250,12 @@ int _main(uint32_t task_id)
     init_dfu_gui();
 #endif
     tft_fill_rectangle(0,240,0,320,249,249,249);
-    tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+
+    if (is_in_fw_mode()) {
+        tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+    } else {
+        tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
+    }
 
 
 # endif

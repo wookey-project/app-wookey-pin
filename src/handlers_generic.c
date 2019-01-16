@@ -1,11 +1,18 @@
 #include "handlers_generic.h"
 #include "libgui.h"
+#include "libfw.h"
 
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
 extern menu_desc_t main_menu;
 extern menu_desc_t dfu_menu;
+
+uint64_t storage_size  = 0;
+
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+char status_info[256];
+#endif
 
 void handle_external_events(bool *need_gui_refresh)
 {
@@ -58,6 +65,44 @@ void handle_external_events(bool *need_gui_refresh)
                         *need_gui_refresh = true;
                     }
                     break;
+                }
+            case MAGIC_STORAGE_SCSI_BLOCK_NUM_RESP:
+                {
+                    uint32_t gsize = 0;
+                    uint32_t gsize_pow = 0;
+                    uint32_t block_size = sync_command_ack.data.u32[0];
+                    uint32_t block_num = sync_command_ack.data.u32[1];
+                    printf("received BLOCK SIZE: %x, %x\n", block_size, block_num);
+                    uint64_t storage_size = (uint64_t)block_size;
+                    uint64_t storage_size_pow;
+                    storage_size *= block_num;
+                    storage_size_pow = storage_size;
+                    storage_size /= (1000 * 1000 * 1000);
+                    storage_size_pow /= (1024 * 1024 * 1024);
+                    gsize = (uint32_t)storage_size;
+                    gsize_pow = (uint32_t)storage_size_pow;
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+                    extern tile_desc_t status_main_tile;
+                    memset(status_info, 0x0, sizeof(status_info));
+#if CONFIG_FIRMWARE_DFU
+# if CONFIG_FIRMWARE_DUALBANK
+                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nyes\nDual bank:\nyes", gsize, gsize_pow);
+# else
+                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nyes\nDual bank:\nno", gsize, gsize_pow);
+# endif
+#else
+# if CONFIG_FIRMWARE_DUALBANK
+                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nno\nDual bank:\nyes", gsize, gsize_pow);
+# else
+                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nno\nDual bank:\nno", gsize, gsize_pow);
+# endif
+#endif
+                    tile_text_t status_text = {
+                        .text = status_info,
+                        .align = TXT_ALIGN_LEFT
+                    };
+                    gui_set_tile_text(&status_text, status_main_tile);
+#endif
                 }
         }
     }
@@ -178,8 +223,14 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_set_cursor_pos(20,160);
-    tft_setfg(0,0,0);
-    tft_setbg(249,249,249);
+    if (is_in_fw_mode()) {
+        tft_setfg(0,0,0);
+        tft_setbg(249,249,249);
+    }
+    if (is_in_dfu_mode()) {
+        tft_setfg(45,9,73);
+        tft_setbg(194,167,214);
+    }
     tft_puts("Please wait...");
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
