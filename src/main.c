@@ -323,8 +323,9 @@ int _main(uint32_t task_id)
      * nothing to do. The advanced settings and user interaction loop
      * is only supported in graphical mode.
      */
+    bool refresh = false;
     while (1) {
-        handle_external_events();
+        handle_external_events(&refresh);
         sys_yield();
     }
 
@@ -348,8 +349,9 @@ int _main(uint32_t task_id)
     //    menu_get_events();
 # else
     /* nothing to do except handling IPC */
+    bool refresh = false;
     while (1) {
-        handle_external_events();
+        handle_external_events(&refresh);
         sys_yield();
     }
 # endif

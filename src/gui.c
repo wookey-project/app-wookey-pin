@@ -74,6 +74,7 @@ tile_desc_t storage_return_tile;
 
 static void cb_handle_graphical_event(tile_desc_t tile)
 {
+#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
     if (tile == settings_set_userpin_tile) {
         handle_settings_request(BOX_SET_USERPIN);
         if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
@@ -101,11 +102,15 @@ static void cb_handle_graphical_event(tile_desc_t tile)
     } else if (tile == main_lock_tile) {
         handle_settings_request(BOX_LOCK);
     }
+#else
+    tile = tile;
+#endif
 }
 
 
 void init_dfu_gui(void)
 {
+#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
     tile_action_t   action;
     gui_error_t       ret;
 
@@ -415,11 +420,13 @@ void init_dfu_gui(void)
 
     ret = gui_declare_default_menu(main_menu);
 
+#endif
     return;
 }
 
 void init_fw_gui(void)
 {
+#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
     tile_action_t   action;
     gui_error_t       ret;
 
@@ -854,5 +861,6 @@ void init_fw_gui(void)
 
     ret = gui_declare_default_menu(main_menu);
 
+#endif
     return;
 }

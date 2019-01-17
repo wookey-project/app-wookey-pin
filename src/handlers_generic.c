@@ -39,9 +39,10 @@ void handle_external_events(bool *need_gui_refresh)
             case MAGIC_DFU_DWNLOAD_FINISHED:
                 {
                     printf("DFU download finished. Going back to main\n");
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
                     gui_unlock_touch();
                     gui_set_menu(main_menu);
-
+#endif
                     if (need_gui_refresh) {
                         *need_gui_refresh = true;
                     }
@@ -53,8 +54,11 @@ void handle_external_events(bool *need_gui_refresh)
                 }
             case MAGIC_DFU_DWNLOAD_STARTED:
                 {
+
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
                     gui_lock_touch();
                     gui_set_menu(dfu_menu);
+#endif
                     printf("DFU download started, going to DFU menu\n");
                     /* The DFU download is now finished (successfully or not)
                      * the user is informed of the result and can go back
@@ -506,7 +510,7 @@ int handle_dfu_confirmation(char *dfuhdr)
 
     } else {
         printf("user said DFU hdr is valid!\n");
-#ifndef CONFIG_APP_PIN_MOCKUP
+#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
         gui_force_refresh();
 #endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_VALID;
