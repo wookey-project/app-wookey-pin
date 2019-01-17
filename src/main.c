@@ -207,12 +207,12 @@ int _main(uint32_t task_id)
     }
 #endif
 
-    tft_fill_rectangle(0,240,0,320,249,249,249);
-
     if (is_in_fw_mode()) {
-    tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+        tft_fill_rectangle(0,240,0,320,lock_colormap[0],lock_colormap[1],lock_colormap[2]);
+        tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
     } else {
-    tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
+        tft_fill_rectangle(0,240,0,320,lock_dfu_colormap[0],lock_dfu_colormap[1],lock_dfu_colormap[2]);
+        tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
     }
 
 #elif CONFIG_APP_PIN_INPUT_USART
