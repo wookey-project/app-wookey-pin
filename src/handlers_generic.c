@@ -72,7 +72,6 @@ void handle_external_events(bool *need_gui_refresh)
                     uint32_t gsize_pow = 0;
                     uint32_t block_size = sync_command_ack.data.u32[0];
                     uint32_t block_num = sync_command_ack.data.u32[1];
-                    printf("received BLOCK SIZE: %x, %x\n", block_size, block_num);
                     uint64_t storage_size = (uint64_t)block_size;
                     uint64_t storage_size_pow;
                     storage_size *= block_num;
