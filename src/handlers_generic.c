@@ -502,8 +502,6 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     if (0) {
         /* mockup mode has no pet name check */
-        s_magic = s_magic;
-        s_version = s_version;
 #else
 # error "input mode must be set"
 #endif
