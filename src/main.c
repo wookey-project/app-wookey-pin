@@ -251,7 +251,7 @@ int _main(uint32_t task_id)
 #endif
     tft_fill_rectangle(0,240,0,320,249,249,249);
 
-    if (is_in_fw_mode()) {
+    if (is_in_fw_mode()){
         tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
     } else {
         tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
