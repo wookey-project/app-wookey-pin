@@ -43,7 +43,7 @@ int handle_petname_confirmation(const char *petname);
 
 uint8_t handle_full_pin_cmd_request(void);
 
-int handle_dfu_confirmation(char *dfuhdr);
+int handle_dfu_confirmation(uint32_t *dfuhdr);
 
 uint8_t handle_authentication(enum authentication_mode authmode);
 

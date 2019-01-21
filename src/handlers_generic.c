@@ -29,7 +29,7 @@ void handle_external_events(bool *need_gui_refresh)
                      * the printed menu will be the DFU menu (no access
                      * to settings or status)
                      */
-                    handle_dfu_confirmation((char*)sync_command_ack.data.u8);
+                    handle_dfu_confirmation((uint32_t*)sync_command_ack.data.u32);
                     if (need_gui_refresh) {
                         *need_gui_refresh = true;
                     }
@@ -454,28 +454,35 @@ struct __packed dfuhdr_t {
  * - Pet name validation by user (or autovalid in mockup mode)
  * - Pet name validation response (Ack/Nack) to smart
  *****************************************************************/
-int handle_dfu_confirmation(char *dfuhdr)
+int handle_dfu_confirmation(uint32_t *dfuhdr)
 {
     uint8_t id_smart = get_smart_id();
     uint8_t ret;
     logsize_t size = 0;
 
-    struct sync_command      ipc_sync_cmd;
-    uint8_t dfu_hdr_len = 8;
-    for (uint8_t i = 0; i < dfu_hdr_len; ++i) {
-        dfuhdr[i] += '0'; /* passing to printable value */
-    }
-    dfuhdr[dfu_hdr_len] = 0;
+    uint32_t magic = dfuhdr[0];
+    uint32_t version = dfuhdr[1];
 
-    printf("DFU: requesting user confirmation for %s\n", dfuhdr);
+    uint8_t version_dev   = version & 0xff;
+    uint8_t version_patch = (version >> 8) & 0xff;
+    uint8_t version_middle= (version >> 16) & 0xff;
+    uint8_t version_major = (version >> 24) & 0xff;
+
+    char s_magic[8] = { 0 };
+    char s_version[16] = { 0 };
+
+    sprintf(s_magic, 8, "%x", magic);
+    sprintf(s_version, 16, "%d.%d.%d-%d", version_major, version_middle, version_patch, version_dev);
+
+    struct sync_command      ipc_sync_cmd;
+    printf("DFU: requesting user confirmation for %s\n", s_version);
 #ifdef CONFIG_APP_PIN_INPUT_USART
     char *ack = 0;
     uint8_t ack_len = 0;
-    dfuhdr_t *hdr = dfuhdr;
 
     console_log("DFU header is:\n");
-    console_log("- Magic: %x\n", hdr->magic);
-    console_log("- version: %x\n", hdr->version);
+    console_log("- Magic: %x\n", magic);
+    console_log("- version: %x\n", version);
     console_log("Is it Okay (y/n)?\n");
     console_flush();
     shell_readline(&ack, (uint32_t*)&ack_len); /*FIXME: update API, set string... and size */
@@ -483,7 +490,7 @@ int handle_dfu_confirmation(char *dfuhdr)
         console_log("Invalid DFU file !!!\n");
         console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-    if (pin_request_string_validation("DFU header", dfuhdr, dfu_hdr_len)) {
+    if (pin_request_string_validation("DFU header", s_version, 16)) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_set_cursor_pos(20,160);
         tft_setfg(0,0,0);
@@ -494,7 +501,8 @@ int handle_dfu_confirmation(char *dfuhdr)
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     if (0) {
         /* mockup mode has no pet name check */
-        dfuhdr = dfuhdr;
+        s_magic = s_magic;
+        s_version = s_version;
 #else
 # error "input mode must be set"
 #endif
