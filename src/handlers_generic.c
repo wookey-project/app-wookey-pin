@@ -224,13 +224,14 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     console_log("Please wait...\n");
     console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-    tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_set_cursor_pos(20,160);
     if (is_in_fw_mode()) {
+        tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_setfg(0,0,0);
         tft_setbg(249,249,249);
     }
     if (is_in_dfu_mode()) {
+        tft_fill_rectangle(0,240,0,320,194,167,214);
         tft_setfg(45,9,73);
         tft_setbg(194,167,214);
     }
