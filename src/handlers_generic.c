@@ -18,8 +18,10 @@ char version_info[32];
 
 void handle_dfu_status(void)
 {
+#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
     extern menu_desc_t status_menu;
     extern tile_desc_t status_main_tile;
+#endif
 
     struct sync_command_data ipc_sync_cmd_data = { 0 };
     uint8_t id = get_smart_id();
@@ -29,14 +31,14 @@ void handle_dfu_status(void)
     ipc_sync_cmd_data.state = SYNC_ASK_FOR_DATA;
 
     sys_ipc(IPC_SEND_SYNC, id, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
-
     sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+
+#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
     if (ipc_sync_cmd_data.magic == MAGIC_DFU_GET_FW_VERSION) {
         uint8_t dev = ipc_sync_cmd_data.data.u32[0] & 0xff;
         uint8_t patch = (ipc_sync_cmd_data.data.u32[0] >> 8) & 0xff;
         uint8_t middle = (ipc_sync_cmd_data.data.u32[0] >> 16) & 0xff;
         uint8_t major = (ipc_sync_cmd_data.data.u32[0] >> 24) & 0xff;
-#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
         memset(storage_info, 0x0, sizeof(version_info));
         sprintf(version_info, 32, "version:\n%d.%d.%d-%d",
                 major, middle, patch, dev);
@@ -46,8 +48,8 @@ void handle_dfu_status(void)
         };
         gui_set_tile_text(&txt, status_main_tile);
         gui_set_menu(status_menu);
-#endif
     }
+#endif
 }
 
 void handle_external_events(bool *need_gui_refresh)
