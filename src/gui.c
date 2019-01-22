@@ -19,6 +19,9 @@
 # include "img/smartcard.h"
 # include "img/dfu.h"
 
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+char status_info[256] = { 0 };
+#endif
 
 menu_desc_t main_menu;
 menu_desc_t status_menu;
@@ -101,6 +104,8 @@ static void cb_handle_graphical_event(tile_desc_t tile)
         }
     } else if (tile == main_lock_tile) {
         handle_settings_request(BOX_LOCK);
+    } else if (tile == main_status_tile) {
+        handle_dfu_status();
     }
 #else
     tile = tile;
@@ -180,8 +185,8 @@ void init_dfu_gui(void)
             .align = TXT_ALIGN_CENTER
         };
 
-        action.type = TILE_ACTION_MENU;
-        action.target.menu = status_menu;
+        action.type = TILE_ACTION_CB;
+        action.target.callback = cb_handle_graphical_event;
 
         ret = gui_declare_tile(main_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_DOUBLE, &action, &text, &icon, &main_status_tile);
         if (ret != GUI_ERR_NONE) {
@@ -600,8 +605,31 @@ void init_fw_gui(void)
             { TILE_FG }
         };
 
+        char *state_tab[] = {
+            "yes",
+            "no"
+        };
+
+        sprintf(status_info, 255, "DFU support:\n%s\nDual bank:\n%s\nFW integrity:\n%s",
+#if CONFIG_FIRMWARE_DFU
+                state_tab[0],
+#else
+                state_tab[1],
+#endif
+#if CONFIG_FIRMWARE_DUALBANK
+                state_tab[0],
+#else
+                state_tab[1],
+#endif
+#if CONFIG_LOADER_FW_HASH_CHECK
+                state_tab[0]
+#else
+                state_tab[1]
+#endif
+               );
+
         tile_text_t text = {
-            .text = "Ceci est un test de texte\nsur plusieurs lignes",
+            .text = status_info,
             .align = TXT_ALIGN_LEFT
         };
 
@@ -738,7 +766,7 @@ void init_fw_gui(void)
         };
 
         tile_text_t text = {
-            .text = "storage:  129G\nblabla\nok",
+            .text = "waiting for storage infos...",
             .align = TXT_ALIGN_LEFT
         };
 

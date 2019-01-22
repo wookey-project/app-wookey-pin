@@ -45,6 +45,8 @@ uint8_t handle_full_pin_cmd_request(void);
 
 int handle_dfu_confirmation(uint32_t *dfuhdr);
 
+void handle_dfu_status(void);
+
 uint8_t handle_authentication(enum authentication_mode authmode);
 
 void handle_external_events(bool *need_gui_refresh);

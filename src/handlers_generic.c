@@ -1,6 +1,7 @@
 #include "handlers_generic.h"
 #include "libgui.h"
 #include "libfw.h"
+#include "img/wait.h"
 
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
@@ -11,8 +12,43 @@ extern menu_desc_t dfu_menu;
 uint64_t storage_size  = 0;
 
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
-char status_info[256];
+char storage_info[256];
+char version_info[32];
 #endif
+
+void handle_dfu_status(void)
+{
+    extern menu_desc_t status_menu;
+    extern tile_desc_t status_main_tile;
+
+    struct sync_command_data ipc_sync_cmd_data = { 0 };
+    uint8_t id = get_smart_id();
+    logsize_t size = sizeof(struct sync_command_data);
+
+    ipc_sync_cmd_data.magic = MAGIC_DFU_GET_FW_VERSION;
+    ipc_sync_cmd_data.state = SYNC_ASK_FOR_DATA;
+
+    sys_ipc(IPC_SEND_SYNC, id, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
+
+    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+    if (ipc_sync_cmd_data.magic == MAGIC_DFU_GET_FW_VERSION) {
+        uint8_t dev = ipc_sync_cmd_data.data.u32[0] & 0xff;
+        uint8_t patch = (ipc_sync_cmd_data.data.u32[0] >> 8) & 0xff;
+        uint8_t middle = (ipc_sync_cmd_data.data.u32[0] >> 16) & 0xff;
+        uint8_t major = (ipc_sync_cmd_data.data.u32[0] >> 24) & 0xff;
+#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+        memset(storage_info, 0x0, sizeof(version_info));
+        sprintf(version_info, 32, "version:\n%d.%d.%d-%d",
+                major, middle, patch, dev);
+        tile_text_t txt = {
+            .text = version_info,
+            .align = TXT_ALIGN_LEFT
+        };
+        gui_set_tile_text(&txt, status_main_tile);
+        gui_set_menu(status_menu);
+#endif
+    }
+}
 
 void handle_external_events(bool *need_gui_refresh)
 {
@@ -85,26 +121,14 @@ void handle_external_events(bool *need_gui_refresh)
                     gsize = (uint32_t)storage_size;
                     gsize_pow = (uint32_t)storage_size_pow;
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
-                    extern tile_desc_t status_main_tile;
-                    memset(status_info, 0x0, sizeof(status_info));
-#if CONFIG_FIRMWARE_DFU
-# if CONFIG_FIRMWARE_DUALBANK
-                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nyes\nDual bank:\nyes", gsize, gsize_pow);
-# else
-                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nyes\nDual bank:\nno", gsize, gsize_pow);
-# endif
-#else
-# if CONFIG_FIRMWARE_DUALBANK
-                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nno\nDual bank:\nyes", gsize, gsize_pow);
-# else
-                    sprintf(status_info, 255, "storage:\n%d GB/%d GB\nDFU support:\nno\nDual bank:\nno", gsize, gsize_pow);
-# endif
-#endif
-                    tile_text_t status_text = {
-                        .text = status_info,
+                    extern tile_desc_t storage_main_tile;
+                    memset(storage_info, 0x0, sizeof(storage_info));
+                    sprintf(storage_info, 255, "storage:\n%d GB\n%d GiB\nstorage block\nsize:\n%d bytes", gsize, gsize_pow, block_size);
+                    tile_text_t storage_text = {
+                        .text = storage_info,
                         .align = TXT_ALIGN_LEFT
                     };
-                    gui_set_tile_text(&status_text, status_main_tile);
+                    gui_set_tile_text(&storage_text, storage_main_tile);
 #endif
                 }
         }
@@ -227,15 +251,12 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     tft_set_cursor_pos(20,160);
     if (is_in_fw_mode()) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
-        tft_setfg(0,0,0);
-        tft_setbg(249,249,249);
+        tft_rle_image(97, 137, 45, 45, wait_colormap, wait, sizeof(wait));
     }
     if (is_in_dfu_mode()) {
         tft_fill_rectangle(0,240,0,320,194,167,214);
-        tft_setfg(45,9,73);
-        tft_setbg(194,167,214);
+        tft_rle_image(97, 137, 45, 45, wait_dfu_colormap, wait, sizeof(wait));
     }
-    tft_puts("Please wait...");
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     /* nothing to do */
