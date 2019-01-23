@@ -15,7 +15,7 @@ extern menu_desc_t dfu_menu;
 
 uint64_t storage_size  = 0;
 
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 char storage_info[256];
 char version_info[32];
 #endif
