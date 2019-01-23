@@ -1,6 +1,7 @@
 #include "handlers_generic.h"
 #include "libgui.h"
 #include "libfw.h"
+#include "api/string.h"
 #include "img/wait.h"
 
 #define PIN_MAX_LEN      16
@@ -141,11 +142,14 @@ void handle_external_events(bool *need_gui_refresh)
 
 int handle_pin_request(uint8_t mode, uint8_t type)
 {
+    extern menu_desc_t error_menu;
     uint8_t pin_len;
     uint8_t id_smart = get_smart_id();
+    bool change_ok = false;
 
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
     char pin[PIN_MAX_LEN + 1] = { 0 };
+    char pin2[PIN_MAX_LEN + 1] = { 0 };
     pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
 #elif CONFIG_APP_PIN_INPUT_USART
     char * pin = 0;
@@ -187,12 +191,14 @@ int handle_pin_request(uint8_t mode, uint8_t type)
             console_log("Enter pet pin code please\n");
         } else if (type == SC_REQ_MODIFY) {
             console_log("Enter new pet pin code please\n");
+            change_ok = true;
         }
     } else if(mode == SC_USER_PIN)  {
         if (type == SC_REQ_AUTHENTICATE) {
             console_log("Enter user pin code please\n");
         } else if (type == SC_REQ_MODIFY) {
             console_log("Enter new user pin code please\n");
+            change_ok = true;
         }
     }
     console_flush();
@@ -206,12 +212,20 @@ int handle_pin_request(uint8_t mode, uint8_t type)
           pin_len = pin_request_digits(" Pet Pin Code ", 14, 0,240,60,320,pin,PIN_MAX_LEN);
         } else if (type == SC_REQ_MODIFY) {
           pin_len = pin_request_digits(" new Pet Pin  ", 14, 0,240,60,320,pin,PIN_MAX_LEN);
+          pin_len = pin_request_digits("new Pet Pin /2", 14, 0,240,60,320,pin2,PIN_MAX_LEN);
+          if (strcmp(pin, pin2) == 0) {
+              change_ok = true;
+          }
         }
     } else if(mode == SC_USER_PIN)  {
         if (type == SC_REQ_AUTHENTICATE) {
           pin_len = pin_request_digits(" User Pin Code", 14, 0,240,60,320,pin,PIN_MAX_LEN);
         } else if (type == SC_REQ_MODIFY) {
           pin_len = pin_request_digits(" New User Pin ", 14, 0,240,60,320,pin,PIN_MAX_LEN);
+          pin_len = pin_request_digits("New User Pin /2", 15, 0,240,60,320,pin2,PIN_MAX_LEN);
+          if (strcmp(pin, pin2) == 0) {
+              change_ok = true;
+          }
         }
     }
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
@@ -271,12 +285,20 @@ int handle_pin_request(uint8_t mode, uint8_t type)
      * send back the pin & pin len values to smart
      *******************************************************/
 
-    if (pin_len > 32) {
-        printf("Pin len is too big ! (%d)", pin_len);
-        goto err;
-    }
     ipc_sync_cmd_data.magic = MAGIC_CRYPTO_PIN_RESP;
-    ipc_sync_cmd_data.state = SYNC_DONE;
+    if (type == SC_REQ_MODIFY) {
+        if (change_ok == false) {
+            /* pin typing error */
+            ipc_sync_cmd_data.state = SYNC_FAILURE;
+        } else {
+            ipc_sync_cmd_data.state = SYNC_DONE;
+        }
+    } else {
+        ipc_sync_cmd_data.state = SYNC_DONE;
+    }
+    if (pin_len > CONFIG_APP_PIN_MAX_PIN_LEN) {
+        ipc_sync_cmd_data.state = SYNC_FAILURE;
+    }
     ipc_sync_cmd_data.data_size = (uint8_t)pin_len;
     memset(&ipc_sync_cmd_data.data.u8, 0x0, 32);
     memcpy(&ipc_sync_cmd_data.data.u8, pin, pin_len);
@@ -336,6 +358,9 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 # error "input mode must be set"
 #endif
     } else {
+#if CONFIG_APP_PIN_INPUT_SCREEN
+        gui_set_menu(error_menu);
+#endif
         printf("Smart said that PIN is invalid\n");
         goto err;
     }
