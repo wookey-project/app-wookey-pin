@@ -190,22 +190,12 @@ int _main(uint32_t task_id)
     if (touch_init()) {
         printf("error during Touch initialization!\n");
     }
-#if 0
-    cb_menu_callbacks_t callbacks = {
-        .handle_settings = handle_settings_request,
-        .handle_auth     = handle_authentication,
-        .handle_pin_cmd  = handle_full_pin_cmd_request,
-        .handle_externals= handle_external_events
-    };
-    menu_init(240, 320, &callbacks, cur_mode);
-#else
     gui_init(240,320, handle_external_events);
     if (is_in_dfu_mode()) {
         init_dfu_gui();
     } else if (is_in_fw_mode()) {
         init_fw_gui();
     }
-#endif
 
     if (is_in_fw_mode()) {
         tft_fill_rectangle(0,240,0,320,lock_colormap[0],lock_colormap[1],lock_colormap[2]);
@@ -238,17 +228,8 @@ int _main(uint32_t task_id)
     if (touch_init()) {
         printf("error during Touch initialization!\n");
     }
-#if 0
-    cb_menu_callbacks_t callbacks = {
-        .handle_settings = handle_settings_request,
-        .handle_auth     = handle_authentication,
-        .handle_pin_cmd  = handle_full_pin_cmd_request
-    };
-    menu_init(240, 320, &callbacks, cur_mode);
-#else
     gui_init(240,320, handle_external_events);
     init_dfu_gui();
-#endif
     tft_fill_rectangle(0,240,0,320,249,249,249);
 
     if (is_in_fw_mode()){
