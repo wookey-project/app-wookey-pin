@@ -165,7 +165,9 @@ void handle_external_events(bool *need_gui_refresh)
 
 int handle_pin_request(uint8_t mode, uint8_t type)
 {
+#if CONFIG_APP_PIN_INPUT_SCREEN
     extern menu_desc_t error_menu;
+#endif
     uint8_t pin_len;
     uint8_t id_smart = get_smart_id();
     bool change_ok = false;
