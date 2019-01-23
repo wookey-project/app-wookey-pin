@@ -18,6 +18,7 @@
 # include "img/massstorage.h"
 # include "img/smartcard.h"
 # include "img/dfu.h"
+# include "img/zz.h"
 
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
 char status_info[256] = { 0 };
@@ -31,6 +32,7 @@ menu_desc_t settings_menu;
 menu_desc_t dfu_menu;
 menu_desc_t storage_menu;
 menu_desc_t error_menu;
+menu_desc_t idle_menu;
 
 tile_desc_t main_status_tile;
 tile_desc_t main_storage_tile;
@@ -59,6 +61,8 @@ tile_desc_t storage_return_tile;
 tile_desc_t error_main_tile;
 tile_desc_t error_return_tile;
 
+tile_desc_t idle_main_tile;
+
 #define TILE_STATUS_BG   .r = 53, .g = 88,  .b = 157
 #define TILE_SETTINGS_BG .r =  0, .g = 159, .b = 155
 #define TILE_WIPE_BG     .r = 231,.g = 92,  .b = 76
@@ -77,6 +81,7 @@ tile_desc_t error_return_tile;
 #define TILE_DFU_RETURN_BG   .r = 72, .g = 27, .b = 88
 
 #define TILE_FG          .r = 255, .g = 255, .b = 255
+#define TILE_IDLE_FG     .r = 222, .g = 222, .b = 222
 
 
 static void cb_handle_graphical_event(tile_desc_t tile)
@@ -468,7 +473,6 @@ void init_dfu_gui(void)
         }
     }
 
-
     ret = gui_declare_default_menu(main_menu);
 
 #endif
@@ -507,6 +511,10 @@ void init_fw_gui(void)
         printf("error while declaring menu: %d\n", ret);
     }
     ret = gui_declare_menu("ERROR", &error_menu);
+    if (ret != GUI_ERR_NONE) {
+        printf("error while declaring menu: %d\n", ret);
+    }
+    ret = gui_declare_menu("IDLE", &idle_menu);
     if (ret != GUI_ERR_NONE) {
         printf("error while declaring menu: %d\n", ret);
     }
@@ -975,7 +983,29 @@ void init_fw_gui(void)
             printf("error while declaring tile: %d\n", ret);
         }
     }
+    /*
+     * idle menu tiles
+     */
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_ERROR_BG },
+            { TILE_FG }
+        };
 
+        action.type = TILE_ACTION_MENU;
+        action.target.menu = main_menu;
+
+        tile_icon_t icon = {
+            .data = zz,
+            .size = sizeof(zz)
+        };
+
+
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, 0, &icon, &idle_main_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
 
 
 

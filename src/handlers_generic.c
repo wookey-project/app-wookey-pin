@@ -7,6 +7,9 @@
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
+/* time (in second) before activating screen saver */
+#define IDLE_TIME 30
+
 extern menu_desc_t main_menu;
 extern menu_desc_t dfu_menu;
 
@@ -52,6 +55,7 @@ void handle_dfu_status(void)
     }
 #endif
 }
+
 
 void handle_external_events(bool *need_gui_refresh)
 {
@@ -136,6 +140,25 @@ void handle_external_events(bool *need_gui_refresh)
                 }
         }
     }
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+    else {
+        if (is_in_fw_mode()) {
+            /* no IPC received. Checking for idle time
+             * This behavior is for FW mode only, as DFU mode is considered
+             * as transient and DFU menu lock the screen */
+            extern menu_desc_t idle_menu;
+            /* not yet in idle ? */
+            if (gui_get_current_menu() != idle_menu) {
+                /* handling idle time */
+                uint64_t idle_time = gui_get_idle_time();
+                if (idle_time > IDLE_TIME) {
+                    gui_set_menu(idle_menu);
+                }
+            }
+        }
+    }
+#endif
+
     return;
 
 }
