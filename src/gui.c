@@ -61,7 +61,12 @@ tile_desc_t storage_return_tile;
 tile_desc_t error_main_tile;
 tile_desc_t error_return_tile;
 
-tile_desc_t idle_main_tile;
+tile_desc_t idle_1st_tile;
+tile_desc_t idle_2nd_tile;
+tile_desc_t idle_3rd_tile;
+tile_desc_t idle_4th_tile;
+tile_desc_t idle_5th_tile;
+tile_desc_t idle_6th_tile;
 
 #define TILE_STATUS_BG   .r = 53, .g = 88,  .b = 157
 #define TILE_SETTINGS_BG .r =  0, .g = 159, .b = 155
@@ -1001,7 +1006,77 @@ void init_fw_gui(void)
         };
 
 
-        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, 0, &icon, &idle_main_tile);
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_HALF, TILE_HEIGHT_STD, &action, 0, &icon, &idle_1st_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_ERROR_BG },
+            { TILE_FG }
+        };
+
+        action.type = TILE_ACTION_MENU;
+        action.target.menu = main_menu;
+
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_HALF, TILE_HEIGHT_STD, &action, 0, 0, &idle_2nd_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_ERROR_BG },
+            { TILE_FG }
+        };
+
+        action.type = TILE_ACTION_MENU;
+        action.target.menu = main_menu;
+
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_HALF, TILE_HEIGHT_STD, &action, 0, 0, &idle_3rd_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_ERROR_BG },
+            { TILE_FG }
+        };
+
+        action.type = TILE_ACTION_MENU;
+        action.target.menu = main_menu;
+
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_HALF, TILE_HEIGHT_STD, &action, 0, 0, &idle_4th_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_ERROR_BG },
+            { TILE_FG }
+        };
+
+        action.type = TILE_ACTION_MENU;
+        action.target.menu = main_menu;
+
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_HALF, TILE_HEIGHT_STD, &action, 0, 0, &idle_5th_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_ERROR_BG },
+            { TILE_FG }
+        };
+
+        action.type = TILE_ACTION_MENU;
+        action.target.menu = main_menu;
+
+        ret = gui_declare_tile(idle_menu, colormap, TILE_WIDTH_HALF, TILE_HEIGHT_STD, &action, 0, 0, &idle_6th_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }

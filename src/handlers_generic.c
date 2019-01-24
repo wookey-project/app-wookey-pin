@@ -4,11 +4,13 @@
 #include "api/string.h"
 #include "img/wait.h"
 
+# include "img/zz.h"
+
 #define PIN_MAX_LEN      16
 #define PETNAME_MAX_LEN  32
 
 /* time (in second) before activating screen saver */
-#define IDLE_TIME 30
+#define IDLE_LOCK 30
 
 extern menu_desc_t main_menu;
 extern menu_desc_t dfu_menu;
@@ -147,13 +149,61 @@ void handle_external_events(bool *need_gui_refresh)
              * This behavior is for FW mode only, as DFU mode is considered
              * as transient and DFU menu lock the screen */
             extern menu_desc_t idle_menu;
+            extern tile_desc_t idle_1st_tile;
+            extern tile_desc_t idle_2nd_tile;
+            extern tile_desc_t idle_3rd_tile;
+            extern tile_desc_t idle_4th_tile;
+            extern tile_desc_t idle_5th_tile;
+            extern tile_desc_t idle_6th_tile;
+
+            uint64_t idle_time = gui_get_idle_time();
             /* not yet in idle ? */
             if (gui_get_current_menu() != idle_menu) {
-                /* handling idle time */
-                uint64_t idle_time = gui_get_idle_time();
-                if (idle_time > IDLE_TIME) {
+                if (idle_time > IDLE_LOCK) {
                     gui_set_menu(idle_menu);
                 }
+            } else {
+                /* handling idle time */
+                uint64_t idle_time = gui_get_idle_time();
+                /* everty IDLE_LOCK time, update the Zz icon position */
+                if ((idle_time % IDLE_LOCK == 0)) {
+                    tile_icon_t zz_icon = {
+                        .data = zz,
+                        .size = sizeof(zz)
+                    };
+                    uint8_t zztile=(((idle_time / IDLE_LOCK) % 6) + 1);
+                    gui_set_tile_icon(0, idle_1st_tile);
+                    gui_set_tile_icon(0, idle_2nd_tile);
+                    gui_set_tile_icon(0, idle_3rd_tile);
+                    gui_set_tile_icon(0, idle_4th_tile);
+                    gui_set_tile_icon(0, idle_4th_tile);
+                    gui_set_tile_icon(0, idle_5th_tile);
+                    gui_set_tile_icon(0, idle_6th_tile);
+                    switch (zztile) {
+                        case 1:
+                            gui_set_tile_icon(&zz_icon, idle_1st_tile);
+                            break;
+                        case 2:
+                            gui_set_tile_icon(&zz_icon, idle_2nd_tile);
+                            break;
+                        case 3:
+                            gui_set_tile_icon(&zz_icon, idle_3rd_tile);
+                            break;
+                        case 4:
+                            gui_set_tile_icon(&zz_icon, idle_4th_tile);
+                            break;
+                        case 5:
+                            gui_set_tile_icon(&zz_icon, idle_5th_tile);
+                            break;
+                        case 6:
+                            gui_set_tile_icon(&zz_icon, idle_6th_tile);
+                            break;
+                        default:
+                            break;
+                    }
+                    gui_force_refresh();
+                }
+
             }
         }
     }
