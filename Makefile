@@ -123,13 +123,9 @@ SOCDRVDEP :=
 
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
 SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
-SOCDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
-SOCDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
 endif
 ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
 SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
-SOCDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
-SOCDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
 SOCDRVDEP += $(BUILD_DIR)/drivers/libusart/libusart.a
@@ -142,6 +138,15 @@ $(SOCDRVDEP):
 
 # board drivers dependencies
 BRDDRVDEP    :=
+
+ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+BRDDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
+BRDDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
+BRDDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
+BRDDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
+endif
 
 brddrvdep: $(BRDDRVDEP)
 
