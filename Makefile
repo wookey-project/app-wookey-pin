@@ -40,7 +40,7 @@ CFLAGS += $(APPS_CFLAGS)
 # the SDK in multi-bank case.
 # this is an option of the linker.
 EXTRA_LDFLAGS ?= -Tpin.fw1.ld
- 
+
 # linker options to add the layout file
 LDFLAGS += $(EXTRA_LDFLAGS) -L$(APP_BUILD_DIR)
 
@@ -49,10 +49,10 @@ LDFLAGS += $(AFLAGS) -fno-builtin -nostdlib -nostartfiles
 
 # project's library you whish to use...
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
-LD_LIBS += -lspi -ltouch -ltft -lgui -lstd -lfirmware
+LD_LIBS += -lspi -lad7843 -lili9341 -lgui -lstd -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
-LD_LIBS += -lspi -ltouch -ltft -lgui -lstd -lfirmware
+LD_LIBS += -lspi -lad7843 -lili9341 -lgui -lstd -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
 LD_LIBS += -lstd -lshell -lconsole -lusart -lfirmware
@@ -91,7 +91,76 @@ TODEL_DISTCLEAN += $(APP_BUILD_DIR) $(LDSCRIPT_NAME)
 ###################################################################
 
 # all (default) build the app
-all: $(APP_BUILD_DIR) app
+all: $(APP_BUILD_DIR) alldeps app
+
+############################################################
+# eplicit dependency on the application libs and drivers
+# compiling the application requires the compilation of its
+# dependencies
+#
+## library dependencies
+LIBDEP := $(BUILD_DIR)/libs/libstd/libstd.a
+ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+LIBDEP += $(BUILD_DIR)/libs/libgui/libgui.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
+LIBDEP += $(BUILD_DIR)/libs/libgui/libgui.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
+LIBDEP += $(BUILD_DIR)/libs/libconsole/libconsole.a
+LIBDEP += $(BUILD_DIR)/libs/libshell/libshell.a
+endif
+LIBDEP += $(BUILD_DIR)/libs/libfirmware/libfirmware.a
+
+libdep: $(LIBDEP)
+
+$(LIBDEP):
+	$(Q)$(MAKE) -C $(PROJ_FILES)libs/$(patsubst lib%.a,%,$(notdir $@))
+
+
+# drivers dependencies
+SOCDRVDEP :=
+
+ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
+SOCDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
+SOCDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
+SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
+SOCDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
+SOCDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
+SOCDRVDEP += $(BUILD_DIR)/drivers/libusart/libusart.a
+endif
+
+socdrvdep: $(SOCDRVDEP)
+
+$(SOCDRVDEP):
+	$(Q)$(MAKE) -C $(PROJ_FILES)drivers/socs/$(SOC)/$(patsubst lib%.a,%,$(notdir $@))
+
+# board drivers dependencies
+BRDDRVDEP    :=
+
+brddrvdep: $(BRDDRVDEP)
+
+$(BRDDRVDEP):
+	$(Q)$(MAKE) -C $(PROJ_FILES)drivers/boards/$(BOARD)/$(patsubst lib%.a,%,$(notdir $@))
+
+# external dependencies
+EXTDEP    :=
+
+extdep: $(EXTDEP)
+
+$(EXTDEP):
+	$(Q)$(MAKE) -C $(PROJ_FILES)externals
+
+
+alldeps: libdep socdrvdep brddrvdep extdep
+
+##########################################################
+
 
 # app build the hex and elf binaries
 app: $(APP_BUILD_DIR)/$(ELF_NAME) $(APP_BUILD_DIR)/$(HEX_NAME)
