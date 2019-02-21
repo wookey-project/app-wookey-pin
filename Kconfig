@@ -46,7 +46,7 @@ config APP_PIN_STACKSIZE
     Specify the application stack size, in bytes. By default, set to 8192
     (i.e. 8k). Depending on the number of slots required, and the usage,
     the stack can be bigger or smaller.
-    
+
 config APP_PIN_PRIO
   int "Pin application priority"
   default 2
@@ -96,6 +96,9 @@ choice
   depends on APP_PIN
   default APP_PIN_INPUT_USART
     config APP_PIN_INPUT_USART
+      select USR_LIB_CONSOLE
+      select USR_LIB_SHELL
+      select USR_DRV_USART
       bool "PIN is asked through USART"
       ---help---
       User interaction for PIN ask is done using dedicated
@@ -103,6 +106,9 @@ choice
     config APP_PIN_INPUT_SCREEN
       bool "PIN is asked through graphical interface"
       select USR_LIB_GUI
+      select USR_DRV_SPI
+      select USR_DRV_AD7843
+      select USR_DRV_ILI9341
       ---help---
       User interaction for PIN ask is done using dedicated
       screen/touchscreen couple
@@ -118,6 +124,10 @@ if APP_PIN_INPUT_MOCKUP
 
 config APP_PIN_MOCKUP_SHOW_MENU
    bool "Show menu in mockup mode"
+   select USR_LIB_GUI
+   select USR_DRV_SPI
+   select USR_DRV_AD7843
+   select USR_DRV_ILI9341
    ---help---
    Show graphical interface, only mockup authentication phase.
    This allows testing user interaction after the authentication
@@ -181,7 +191,7 @@ endif
 if APP_PIN_INPUT_USART
   config APP_PIN_INPUT_USART_ID
   int "PIN USART interface identifier"
-  range 1 6 
+  range 1 6
 endif
 
 endmenu
