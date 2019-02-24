@@ -89,7 +89,11 @@ tile_desc_t idle_6th_tile;
 #define TILE_IDLE_FG     .r = 222, .g = 222, .b = 222
 
 
+#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
 static void cb_handle_graphical_event(tile_desc_t tile)
+#else
+static void cb_handle_graphical_event(__attribute__((unused)) tile_desc_t tile)
+#endif
 {
 #ifndef CONFIG_APP_PIN_INPUT_MOCKUP
     if (tile == settings_set_userpin_tile) {
@@ -121,8 +125,6 @@ static void cb_handle_graphical_event(tile_desc_t tile)
     } else if (tile == main_status_tile) {
         handle_dfu_status();
     }
-#else
-    tile = tile;
 #endif
 }
 

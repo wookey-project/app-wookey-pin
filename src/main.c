@@ -60,7 +60,7 @@ uint8_t get_smart_id(void)
     return id_smart;
 }
 
-static volatile bool cur_mode = MODE_FW;
+static volatile t_boot_mode cur_mode = MODE_FW;
 
 t_boot_mode get_mode(void)
 {

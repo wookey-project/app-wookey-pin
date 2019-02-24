@@ -213,7 +213,11 @@ void handle_external_events(bool *need_gui_refresh)
 
 }
 
+#if CONFIG_APP_PIN_INPUT_MOCKUP
+int handle_pin_request(__attribute__((unused)) uint8_t mode, __attribute__((unused)) uint8_t type)
+#else
 int handle_pin_request(uint8_t mode, uint8_t type)
+#endif
 {
 #if CONFIG_APP_PIN_INPUT_SCREEN
     extern menu_desc_t error_menu;
@@ -230,8 +234,6 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     char * pin = 0;
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-    mode = mode;
-    type = type;
     char pin[PIN_MAX_LEN + 1] = { 0 };
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #endif
@@ -661,7 +663,11 @@ err:
  * - Pet name validation by user (or autovalid in mockup mode)
  * - Pet name validation response (Ack/Nack) to smart
  *****************************************************************/
+#if CONFIG_APP_PIN_INPUT_MOCKUP
+int handle_petname_confirmation(__attribute__((unused)) const char *petname)
+#else
 int handle_petname_confirmation(const char *petname)
+#endif
 {
     uint8_t id_smart = get_smart_id();
     uint8_t ret;
@@ -693,7 +699,6 @@ int handle_petname_confirmation(const char *petname)
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     if (0) {
         /* mockup mode has no pet name check */
-        petname = petname;
 #else
 # error "input mode must be set"
 #endif

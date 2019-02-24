@@ -45,7 +45,7 @@ EXTRA_LDFLAGS ?= -Tpin.fw1.ld
 LDFLAGS += $(EXTRA_LDFLAGS) -L$(APP_BUILD_DIR)
 
 # generic linker options
-LDFLAGS += $(AFLAGS) -fno-builtin -nostdlib -nostartfiles
+LDFLAGS += -fno-builtin -nostdlib -nostartfiles $(AFLAGS_GCC) -Wl,-Map=$(APP_BUILD_DIR)/$(APP_NAME).map
 
 # project's library you whish to use...
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
