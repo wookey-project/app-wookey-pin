@@ -139,6 +139,12 @@ void handle_external_events(bool *need_gui_refresh)
                     };
                     gui_set_tile_text(&storage_text, storage_main_tile);
 #endif
+                    break;
+                }
+            default:
+                {
+                    /* no action for others */
+                    break;
                 }
         }
     }
