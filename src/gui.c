@@ -21,7 +21,7 @@
 # include "img/zz.h"
 
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
-char status_info[256] = { 0 };
+static char status_info[256] = { 0 };
 #endif
 
 menu_desc_t main_menu;
@@ -41,6 +41,7 @@ tile_desc_t main_settings_tile;
 tile_desc_t main_wipe_tile;
 
 tile_desc_t status_main_tile;
+tile_desc_t status_se_tile;
 tile_desc_t status_return_tile;
 
 tile_desc_t settings_set_userpin_tile;
@@ -676,7 +677,7 @@ void init_fw_gui(void)
             "no"
         };
 
-        sprintf(status_info, 255, "DFU support:\n%s\nDual bank:\n%s\nFW integrity:\n%s",
+        sprintf(status_info, 255, "DFU mode:%s\nDual bank:%s\nFW integrity:\n%s",
 #if CONFIG_FIRMWARE_DFU
                 state_tab[0],
 #else
@@ -701,7 +702,20 @@ void init_fw_gui(void)
 
         action.type = TILE_ACTION_NONE;
 
-        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_TRIPLE, &action, &text, 0, &status_main_tile);
+        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_DOUBLE, &action, &text, 0, &status_main_tile);
+        if (ret != GUI_ERR_NONE) {
+            printf("error while declaring tile: %d\n", ret);
+        }
+    }
+    {
+        tile_colormap_t colormap[2] = {
+            { TILE_STATUS_BG },
+            { TILE_FG }
+        };
+
+        action.type = TILE_ACTION_NONE;
+
+        ret = gui_declare_tile(status_menu, colormap, TILE_WIDTH_FULL, TILE_HEIGHT_STD, &action, 0, 0, &status_se_tile);
         if (ret != GUI_ERR_NONE) {
             printf("error while declaring tile: %d\n", ret);
         }

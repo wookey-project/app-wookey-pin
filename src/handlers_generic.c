@@ -18,8 +18,9 @@ extern menu_desc_t dfu_menu;
 uint64_t storage_size  = 0;
 
 #if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
-char storage_info[256];
-char version_info[32];
+static char se_info[32] = { 0 };
+static char storage_info[256];
+static char version_info[32];
 #endif
 
 void handle_dfu_status(void)
@@ -416,7 +417,16 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) {
         if (mode == SC_USER_PIN && type == SC_REQ_AUTHENTICATE)
         {
-            //menu_update_remaining_tries(ipc_sync_cmd_data.data.u32[0]);
+            extern tile_desc_t status_se_tile;
+            uint8_t remaining_tries = (uint8_t)ipc_sync_cmd_data.data.u32[0];
+            sprintf(se_info, 31, "SE PIN tries:\n%d", remaining_tries);
+
+            tile_text_t text = {
+                .text = se_info,
+                .align = TXT_ALIGN_LEFT
+            };
+
+            gui_set_tile_text(&text, status_se_tile);
         }
     }
 #endif
@@ -464,8 +474,6 @@ int handle_petname_request(void)
      ******************************************/
     uint8_t id_smart = get_smart_id();
     struct sync_command_data ipc_sync_cmd_data = { 0 };
-    //logsize_t size = 0;
-    //uint8_t id = 0;
     uint8_t ret = 0;
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
@@ -504,8 +512,6 @@ int handle_petname_request(void)
     char petname[24 + 1] = { 0 };
     memcpy(petname, "Dark Vador", 10);
     /* mockup mode has no pet name check */
-    //const char *petname = "johny";
-    //uint8_t pet_name_len = 5;
 #else
 # error "input mode must be set"
 #endif
@@ -524,57 +530,28 @@ int handle_petname_request(void)
       ret = sys_ipc(IPC_SEND_SYNC, id_smart, sizeof(struct sync_command_data), (char*)&ipc_sync_cmd_data);
     } while (ret == SYS_E_BUSY);
 
-    /*******************************************
-     * wait for SMART pet name update acknowledge
-     ******************************************/
-    // TODO: SMART does not acknowledge pet name update on the token
-    // This part is deactivated by now.
-#if 0
-    id = id_smart;
-    size = sizeof(struct sync_command_data);
-
-    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
-
-
-    /********************************************************
-     * Depending on what SMART said, indicate the current status
-     *******************************************************/
-
-    if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd_data.state == SYNC_ACKNOWLEDGE)
-    {
-#endif
-        printf("Pet name update has been acknowledged by SMART\n");
+    printf("Pet name update has been acknowledged by SMART\n");
 #ifdef CONFIG_APP_PIN_INPUT_USART
-        console_log("pet name update done\n");
-        console_flush();
+    console_log("pet name update done\n");
+    console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-        tft_fill_rectangle(0,240,0,320,249,249,249);
-        tft_set_cursor_pos(20,160);
-        tft_setfg(0,0,0);
-        tft_setbg(249,249,249);
-        tft_puts("Pet name");
-        tft_set_cursor_pos(20,190);
-        tft_puts("updated !");
+    tft_fill_rectangle(0,240,0,320,249,249,249);
+    tft_set_cursor_pos(20,160);
+    tft_setfg(0,0,0);
+    tft_setbg(249,249,249);
+    tft_puts("Pet name");
+    tft_set_cursor_pos(20,190);
+    tft_puts("updated !");
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-        /* nothing to do */
+    /* nothing to do */
 #else
 # error "input mode must be set"
 #endif
 
-#if 0
-    } else {
-        printf("Smart said that Pet name update failed\n");
-        goto err;
-    }
-#endif
-
     return 0;
-#if 0
-err:
-    return 1;
-#endif
 }
+
 struct __packed dfuhdr_t {
     uint32_t magic;
     uint32_t version;

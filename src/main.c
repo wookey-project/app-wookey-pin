@@ -229,7 +229,11 @@ int _main(uint32_t task_id)
         printf("error during Touch initialization!\n");
     }
     gui_init(240,320, handle_external_events);
-    init_dfu_gui();
+    if (is_in_dfu_mode()) {
+        init_dfu_gui();
+    } else {
+        init_fw_gui();
+    }
     tft_fill_rectangle(0,240,0,320,249,249,249);
 
     if (is_in_fw_mode()){
@@ -237,7 +241,6 @@ int _main(uint32_t task_id)
     } else {
         tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
     }
-
 
 # endif
 
