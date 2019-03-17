@@ -47,7 +47,7 @@ void handle_dfu_status(void)
         uint8_t middle = (ipc_sync_cmd_data.data.u32[0] >> 16) & 0xff;
         uint8_t major = (ipc_sync_cmd_data.data.u32[0] >> 24) & 0xff;
         memset(storage_info, 0x0, sizeof(version_info));
-        sprintf(version_info, 32, "version:\n%d.%d.%d-%d",
+        snprintf(version_info, 32, "version:\n%d.%d.%d-%d",
                 major, middle, patch, dev);
         tile_text_t txt = {
             .text = version_info,
@@ -133,7 +133,7 @@ void handle_external_events(bool *need_gui_refresh)
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
                     extern tile_desc_t storage_main_tile;
                     memset(storage_info, 0x0, sizeof(storage_info));
-                    sprintf(storage_info, 255, "storage:\n%d GB\n%d GiB\nstorage block\nsize:\n%d bytes", gsize, gsize_pow, block_size);
+                    snprintf(storage_info, 255, "storage:\n%d GB\n%d GiB\nstorage block\nsize:\n%d bytes", gsize, gsize_pow, block_size);
                     tile_text_t storage_text = {
                         .text = storage_info,
                         .align = TXT_ALIGN_LEFT
@@ -419,7 +419,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
         {
             extern tile_desc_t status_se_tile;
             uint8_t remaining_tries = (uint8_t)ipc_sync_cmd_data.data.u32[0];
-            sprintf(se_info, 31, "SE PIN tries:\n%d", remaining_tries);
+            snprintf(se_info, 31, "SE PIN tries:\n%d", remaining_tries);
 
             tile_text_t text = {
                 .text = se_info,
@@ -580,8 +580,8 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
     char s_magic[8] = { 0 };
     char s_version[16] = { 0 };
 
-    sprintf(s_magic, 8, "%x", magic);
-    sprintf(s_version, 16, "%d.%d.%d-%d", version_major, version_middle, version_patch, version_dev);
+    snprintf(s_magic, 8, "%x", magic);
+    snprintf(s_version, 16, "%d.%d.%d-%d", version_major, version_middle, version_patch, version_dev);
 
     struct sync_command      ipc_sync_cmd;
     printf("DFU: requesting user confirmation for %s\n", s_version);

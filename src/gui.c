@@ -677,7 +677,7 @@ void init_fw_gui(void)
             "no"
         };
 
-        sprintf(status_info, 255, "DFU mode:%s\nDual bank:%s\nFW integrity:\n%s",
+        snprintf(status_info, 255, "DFU mode:%s\nDual bank:%s\nFW integrity:\n%s",
 #if CONFIG_FIRMWARE_DFU
                 state_tab[0],
 #else
