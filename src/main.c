@@ -9,7 +9,8 @@
 
 
 #include "api/syscall.h"
-#include "api/print.h"
+#include "api/stdio.h"
+#include "api/nostd.h"
 #include "api/string.h"
 
 #if CONFIG_APP_PIN_INPUT_USART
