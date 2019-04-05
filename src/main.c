@@ -338,7 +338,7 @@ int _main(uint32_t task_id)
     bool refresh = false;
     while (1) {
         handle_external_events(&refresh);
-        sys_yield();
+        sys_sleep(1000, SLEEP_MODE_INTERRUPTIBLE);
     }
 # endif
 
