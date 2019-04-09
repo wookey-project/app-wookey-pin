@@ -55,7 +55,7 @@ ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
 LD_LIBS += -lspi -lad7843 -lili9341 -lgui -lstd -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
-LD_LIBS += -lstd -lshell -lconsole -lusart -lfirmware
+LD_LIBS += -lstd -lconsole -lusart -lfirmware
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_MOCKUP))
 LD_LIBS += -lstd -lfirmware
@@ -108,7 +108,6 @@ LIBDEP += $(BUILD_DIR)/libs/libgui/libgui.a
 endif
 ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
 LIBDEP += $(BUILD_DIR)/libs/libconsole/libconsole.a
-LIBDEP += $(BUILD_DIR)/libs/libshell/libshell.a
 endif
 LIBDEP += $(BUILD_DIR)/libs/libfirmware/libfirmware.a
 

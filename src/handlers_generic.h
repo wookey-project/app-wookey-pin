@@ -13,7 +13,6 @@
 
 # include "libusart.h"
 # include "libconsole.h"
-# include "libshell.h"
 
 #elif CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
 

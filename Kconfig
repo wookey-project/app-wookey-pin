@@ -97,9 +97,9 @@ choice
   default APP_PIN_INPUT_USART
     config APP_PIN_INPUT_USART
       select USR_LIB_CONSOLE
-      select USR_LIB_SHELL
       select USR_DRV_USART
       bool "PIN is asked through USART"
+      select USR_LIB_CONSOLE
       ---help---
       User interaction for PIN ask is done using dedicated
       USART interface
@@ -121,17 +121,6 @@ choice
 endchoice
 
 if APP_PIN_INPUT_MOCKUP
-
-config APP_PIN_MOCKUP_SHOW_MENU
-   bool "Show menu in mockup mode"
-   select USR_LIB_GUI
-   select USR_DRV_SPI
-   select USR_DRV_AD7843
-   select USR_DRV_ILI9341
-   ---help---
-   Show graphical interface, only mockup authentication phase.
-   This allows testing user interaction after the authentication
-   phase without requesting manual authentication.
 
 config APP_PIN_MOCKUP_USER_PIN_VALUE
    string "Mockup user pin value"

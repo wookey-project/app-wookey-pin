@@ -238,7 +238,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     char pin2[PIN_MAX_LEN + 1] = { 0 };
     pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
 #elif CONFIG_APP_PIN_INPUT_USART
-    char * pin = 0;
+    char pin[PIN_MAX_LEN + 1] = { 0 };
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     char pin[PIN_MAX_LEN + 1] = { 0 };
@@ -285,10 +285,9 @@ int handle_pin_request(uint8_t mode, uint8_t type)
             change_ok = true;
         }
     }
-    console_flush();
-    shell_readline(&pin, (uint32_t*)&pin_len); /*FIXME: update API, set string... and size */
+    console_show_prompt();
+    console_readline(pin, (uint32_t*)&pin_len, PIN_MAX_LEN); /*FIXME: update API, set string... and size */
     console_log("pin registered!\n");
-    console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 
     if (mode == SC_PET_PIN) {
@@ -346,7 +345,6 @@ int handle_pin_request(uint8_t mode, uint8_t type)
      *******************************************************/
 #ifdef CONFIG_APP_PIN_INPUT_USART
     console_log("Please wait...\n");
-    console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     tft_set_cursor_pos(20,160);
     if (is_in_fw_mode()) {
@@ -437,7 +435,6 @@ int handle_pin_request(uint8_t mode, uint8_t type)
         valid_pin = true;
 #ifdef CONFIG_APP_PIN_INPUT_USART
         console_log("valid PIN, continuing...\n");
-        console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
         tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_set_cursor_pos(20,160);
@@ -477,19 +474,19 @@ int handle_petname_request(void)
     uint8_t ret = 0;
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
-    char *petname = 0;
+    char petname[24 + 1] = { 0 };
     uint8_t petname_len = 0;
-    char *ack = 0;
+    char ack[2] = { 0 };
     uint8_t ack_len = 0;
 
     bool validated=false;
     do {
         console_log("Please enter new pet name:\n");
-        console_flush();
-        shell_readline(&petname, (uint32_t*)&petname_len);
+        console_show_prompt();
+        console_readline(petname, (uint32_t*)&petname_len, 24);
         console_log("Confirm pet name ? (y/n)\n");
-        console_flush();
-        shell_readline(&ack, (uint32_t*)&ack_len);
+        console_show_prompt();
+        console_readline(ack, (uint32_t*)&ack_len, 2);
         if (ack_len == 1 && ack[0] == 'y') {
             validated=true;
         }
@@ -533,7 +530,6 @@ int handle_petname_request(void)
     printf("Pet name update has been acknowledged by SMART\n");
 #ifdef CONFIG_APP_PIN_INPUT_USART
     console_log("pet name update done\n");
-    console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_set_cursor_pos(20,160);
@@ -586,18 +582,17 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
     struct sync_command      ipc_sync_cmd;
     printf("DFU: requesting user confirmation for %s\n", s_version);
 #ifdef CONFIG_APP_PIN_INPUT_USART
-    char *ack = 0;
-    uint8_t ack_len = 0;
+    char ack[2] = { 0 };
+    uint32_t ack_len = 0;
 
     console_log("DFU header is:\n");
     console_log("- Magic: %x\n", magic);
     console_log("- version: %x\n", version);
     console_log("Is it Okay (y/n)?\n");
-    console_flush();
-    shell_readline(&ack, (uint32_t*)&ack_len); /*FIXME: update API, set string... and size */
+    console_show_prompt();
+    console_readline(ack, &ack_len, 2); /*FIXME: update API, set string... and size */
     if (ack_len == 1 && ack[0] == 'n') {
         console_log("Invalid DFU file !!!\n");
-        console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     if (pin_request_string_validation("DFU header", s_version, 16)) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
@@ -614,7 +609,7 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 # error "input mode must be set"
 #endif
         printf("user said DFU hdr is invalid!\n");
-#ifndef CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#if CONFIG_APP_PIN_INPUT_SCREEN
         gui_force_refresh();
 #endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_INVALID;
@@ -625,7 +620,7 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 
     } else {
         printf("user said DFU hdr is valid!\n");
-#ifndef CONFIG_APP_PIN_INPUT_MOCKUP
+#if CONFIG_APP_PIN_INPUT_SCREEN
         gui_force_refresh();
 #endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_VALID;
@@ -659,15 +654,14 @@ int handle_petname_confirmation(const char *petname)
     struct sync_command      ipc_sync_cmd;
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
-    char *ack = 0;
-    uint8_t ack_len = 0;
+    char ack[2] = { 0 };
+    uint32_t ack_len = 0;
 
     console_log("Pet name is \"%s\". Is it Okay (y/n)?\n", petname);
-    console_flush();
-    shell_readline(&ack, (uint32_t*)&ack_len); /*FIXME: update API, set string... and size */
+    console_show_prompt();
+    console_readline(ack, &ack_len, 2); /*FIXME: update API, set string... and size */
     if (ack_len == 1 && ack[0] == 'n') {
         console_log("Invalid pet name !!!\n");
-        console_flush();
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     uint8_t pet_name_len = strlen(petname);
 
@@ -775,7 +769,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
 
     while (!authenticated) {
         sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
-#if 1
+#if PIN_DEBUG
         printf("req.sc_type: %d\n", ipc_sync_cmd.data.req.sc_type);
         printf("req.sc_req: %d\n", ipc_sync_cmd.data.req.sc_req);
 #endif
@@ -841,7 +835,7 @@ err:
     return 1;
 }
 
-#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#if CONFIG_APP_PIN_INPUT_SCREEN
 uint8_t handle_settings_request(t_box signal)
 {
     uint8_t id_smart = get_smart_id();

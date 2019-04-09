@@ -17,7 +17,6 @@
 
 # include "libusart.h"
 # include "libconsole.h"
-# include "libshell.h"
 
 #elif CONFIG_APP_PIN_INPUT_SCREEN
 
@@ -92,7 +91,7 @@ int _main(uint32_t task_id)
 
     /* USART mode: eclaring an USART device to interact */
 
-    ret = shell_early_init(CONFIG_APP_PIN_INPUT_USART_ID, 115200);
+    ret = console_early_init(CONFIG_APP_PIN_INPUT_USART_ID, 115200);
     if (ret != SYS_E_DONE) {
         printf("ERROR: registering USART through libshell failed.\n");
         while (1);
@@ -212,14 +211,13 @@ int _main(uint32_t task_id)
      * in the specific case of usart, the readline() function allocate
      * the string. The pin variable is then not a table but a string pointer
      */
-    shell_init();
+    console_init();
     if (ret == 0) {
         printf("USART4 is now configured !\n");
     } else {
         printf("error during configuration of USART4\n");
     }
     console_log("[USART4] Pin initialized usart...\n");
-    console_flush();
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
 
 # if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
