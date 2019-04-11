@@ -193,7 +193,15 @@ int _main(uint32_t task_id)
     }
     gui_init(240,320, handle_external_events);
     if (is_in_dfu_mode()) {
+        rgb_color_t clr;
         init_dfu_gui();
+        /* in DFU mode, we update the pin pad colormap */
+        clr.r = 179; clr.g = 118; clr.b = 197;
+        pin_set_pad_color(&clr);
+        clr.r = 252; clr.g = 225; clr.b = 59;
+        pin_set_nextprev_color(&clr);
+        clr.r = 132; clr.g = 2; clr.b = 180;
+        pin_set_bg_color(&clr);
     } else if (is_in_fw_mode()) {
         init_fw_gui();
     }
