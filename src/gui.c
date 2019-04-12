@@ -133,7 +133,7 @@ static void cb_handle_graphical_event(__attribute__((unused)) tile_desc_t tile)
 
 void init_dfu_gui(void)
 {
-#ifdef NFIG_APP_PIN_INPUT_SCREEN
+#if CONFIG_APP_PIN_INPUT_SCREEN
     tile_action_t   action;
     gui_error_t       ret;
 
@@ -490,7 +490,7 @@ void init_dfu_gui(void)
 
 void init_fw_gui(void)
 {
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if CONFIG_APP_PIN_INPUT_SCREEN
     tile_action_t   action;
     gui_error_t       ret;
 
