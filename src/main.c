@@ -102,7 +102,13 @@ int _main(uint32_t task_id)
 
     /* graphical mode: declaring graphical devices */
 
+#if CONFIG_WOOKEY_V1
     if (spi1_early_init()) {
+#elif CONFIG_WOOKEY_V2
+    if (spi2_early_init()) {
+#else
+# error "unsupported board for graphical interface"
+#endif
         printf("ERROR: registering SPI1 failed.\n");
         while (1)
             ;
@@ -121,25 +127,6 @@ int _main(uint32_t task_id)
     printf("Registered SPI1, Touchscreen and TFT.\n");
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
     /* mockup mode: external I/O only if requested */
-# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
-
-    if (spi1_early_init()) {
-        printf("ERROR: registering SPI1 failed.\n");
-        while (1)
-            ;
-    }
-    if (tft_early_init()) {
-        printf("ERROR: registering TFT failed.\n");
-        while (1)
-            ;
-    }
-    if (touch_early_init()) {
-        printf("ERROR: registering Touchscreen failed.\n");
-        while (1)
-            ;
-    }
-
-# endif
 
 #else
 # error "input mode must be set"
@@ -194,7 +181,6 @@ int _main(uint32_t task_id)
     gui_init(240,320, handle_external_events);
     if (is_in_dfu_mode()) {
         rgb_color_t clr;
-        init_dfu_gui();
         /* in DFU mode, we update the pin pad colormap */
         clr.r = 179; clr.g = 118; clr.b = 197;
         pin_set_pad_color(&clr);
@@ -202,6 +188,7 @@ int _main(uint32_t task_id)
         pin_set_nextprev_color(&clr);
         clr.r = 132; clr.g = 2; clr.b = 180;
         pin_set_bg_color(&clr);
+        init_dfu_gui();
     } else if (is_in_fw_mode()) {
         init_fw_gui();
     }
@@ -227,31 +214,7 @@ int _main(uint32_t task_id)
     }
     console_log("[USART4] Pin initialized usart...\n");
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
-
-# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
-    /* menu activation only if requested */
-    if (tft_init()) {
-        printf("error during TFT initialization!\n");
-    }
-    if (touch_init()) {
-        printf("error during Touch initialization!\n");
-    }
-    gui_init(240,320, handle_external_events);
-    if (is_in_dfu_mode()) {
-        init_dfu_gui();
-    } else {
-        init_fw_gui();
-    }
-    tft_fill_rectangle(0,240,0,320,249,249,249);
-
-    if (is_in_fw_mode()){
-        tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
-    } else {
-        tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
-    }
-
-# endif
-
+ /* no screen config in mokcup */
 #else
 # error "input type must be set"
 #endif
@@ -335,18 +298,12 @@ int _main(uint32_t task_id)
 
 #elif CONFIG_APP_PIN_INPUT_MOCKUP
 
-# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
-
-    gui_get_events();
-    //    menu_get_events();
-# else
     /* nothing to do except handling IPC */
     bool refresh = false;
     while (1) {
         handle_external_events(&refresh);
         sys_sleep(1000, SLEEP_MODE_INTERRUPTIBLE);
     }
-# endif
 
 #else
 # error "input mode must be set"
