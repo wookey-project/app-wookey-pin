@@ -568,7 +568,7 @@ struct __packed dfuhdr_t {
  * - Pet name validation by user (or autovalid in mockup mode)
  * - Pet name validation response (Ack/Nack) to smart
  *****************************************************************/
-int handle_dfu_confirmation(uint32_t *dfuhdr __attribute__((unused)))
+int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
 {
     uint8_t id_smart = get_smart_id();
     uint8_t ret;
