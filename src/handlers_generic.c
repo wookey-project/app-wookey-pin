@@ -579,12 +579,13 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
     uint32_t magic = dfuhdr[0];
     uint32_t version = dfuhdr[1];
 
-    printf("%s: magic: %d, version: %08d\n", __func__, magic, version);
-
 #if CONFIG_APP_PIN_INPUT_SCREEN
     memset(storage_info, 0x0, 256);
-    snprintf(storage_info, 255, "header:\nv: %08d\nmagic: %04d", version, magic);
-    printf("DFU: requesting user confirmation for #%s#\n", storage_info);
+    snprintf(storage_info, 255, "header:        magic: %d\n   version:\n     %01d.%01d.%01d-%01d\n", magic,
+            version >> 24 & 0xff,
+            version >> 16 & 0xff,
+            version >>  8 & 0xff,
+            version       & 0xff);
 #endif
 
 #ifdef CONFIG_APP_PIN_INPUT_USART
