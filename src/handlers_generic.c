@@ -17,10 +17,11 @@ extern menu_desc_t dfu_menu;
 
 uint64_t storage_size  = 0;
 
-#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#if CONFIG_APP_PIN_INPUT_SCREEN
 static char se_info[32] = { 0 };
 static char storage_info[256];
 static char version_info[32];
+
 #endif
 
 void handle_dfu_status(void)
@@ -75,6 +76,10 @@ void handle_external_events(bool *need_gui_refresh)
                      * the printed menu will be the DFU menu (no access
                      * to settings or status)
                      */
+
+#if PIN_DEBUG
+                    printf("receiving ack request for magic %08x, version %d\n", sync_command_ack.data.u32[0], sync_command_ack.data.u32[1]);
+#endif
                     handle_dfu_confirmation((uint32_t*)sync_command_ack.data.u32);
                     if (need_gui_refresh) {
                         *need_gui_refresh = true;
@@ -84,7 +89,9 @@ void handle_external_events(bool *need_gui_refresh)
 
             case MAGIC_DFU_DWNLOAD_FINISHED:
                 {
+#if PIN_DEBUG
                     printf("DFU download finished. Going back to main\n");
+#endif
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
                     gui_unlock_touch();
                     gui_set_menu(main_menu);
@@ -105,7 +112,9 @@ void handle_external_events(bool *need_gui_refresh)
                     gui_lock_touch();
                     gui_set_menu(dfu_menu);
 #endif
+#if PIN_DEBUG
                     printf("DFU download started, going to DFU menu\n");
+#endif
                     /* The DFU download is now finished (successfully or not)
                      * the user is informed of the result and can go back
                      * to the global menu with a return button
@@ -133,7 +142,7 @@ void handle_external_events(bool *need_gui_refresh)
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
                     extern tile_desc_t storage_main_tile;
                     memset(storage_info, 0x0, sizeof(storage_info));
-                    snprintf(storage_info, 255, "storage:\n%d GB\n%d GiB\nstorage block\nsize:\n%d bytes", gsize, gsize_pow, block_size);
+                    snprintf(storage_info, 255, "storage:\n%d GB,%d GiB\nstorage block\nsize:\n%d bytes", gsize, gsize_pow, block_size);
                     tile_text_t storage_text = {
                         .text = storage_info,
                         .align = TXT_ALIGN_LEFT
@@ -563,24 +572,19 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 {
     uint8_t id_smart = get_smart_id();
     uint8_t ret;
+    //int s_ret;
     logsize_t size = 0;
 
     uint32_t magic = dfuhdr[0];
     uint32_t version = dfuhdr[1];
 
-    uint8_t version_dev   = version & 0xff;
-    uint8_t version_patch = (version >> 8) & 0xff;
-    uint8_t version_middle= (version >> 16) & 0xff;
-    uint8_t version_major = (version >> 24) & 0xff;
+    printf("%s: magic: %d, version: %08d\n", __func__, magic, version);
 
-    char s_magic[8] = { 0 };
-    char s_version[16] = { 0 };
-
-    snprintf(s_magic, 8, "%x", magic);
-    snprintf(s_version, 16, "%d.%d.%d-%d", version_major, version_middle, version_patch, version_dev);
+    memset(storage_info, 0x0, 256);
+    snprintf(storage_info, 255, "header:\nv: %08d\nmagic: %04d", version, magic);
 
     struct sync_command      ipc_sync_cmd;
-    printf("DFU: requesting user confirmation for %s\n", s_version);
+    printf("DFU: requesting user confirmation for #%s#\n", storage_info);
 #ifdef CONFIG_APP_PIN_INPUT_USART
     char ack[2] = { 0 };
     uint32_t ack_len = 0;
@@ -594,7 +598,7 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
     if (ack_len == 1 && ack[0] == 'n') {
         console_log("Invalid DFU file !!!\n");
 #elif CONFIG_APP_PIN_INPUT_SCREEN
-    if (pin_request_string_validation("DFU header", s_version, 16)) {
+    if (pin_request_string_validation("DFU header", storage_info, strlen(storage_info))) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_set_cursor_pos(20,160);
         tft_setfg(0,0,0);
