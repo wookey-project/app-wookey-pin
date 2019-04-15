@@ -572,7 +572,8 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 {
     uint8_t id_smart = get_smart_id();
     uint8_t ret;
-    //int s_ret;
+    struct sync_command      ipc_sync_cmd;
+
     logsize_t size = 0;
 
     uint32_t magic = dfuhdr[0];
@@ -580,11 +581,12 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 
     printf("%s: magic: %d, version: %08d\n", __func__, magic, version);
 
+#if CONFIG_APP_PIN_INPUT_SCREEN
     memset(storage_info, 0x0, 256);
     snprintf(storage_info, 255, "header:\nv: %08d\nmagic: %04d", version, magic);
-
-    struct sync_command      ipc_sync_cmd;
     printf("DFU: requesting user confirmation for #%s#\n", storage_info);
+#endif
+
 #ifdef CONFIG_APP_PIN_INPUT_USART
     char ack[2] = { 0 };
     uint32_t ack_len = 0;
