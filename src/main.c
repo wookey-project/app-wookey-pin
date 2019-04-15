@@ -8,10 +8,10 @@
 #include "autoconf.h"
 
 
-#include "api/syscall.h"
-#include "api/stdio.h"
-#include "api/nostd.h"
-#include "api/string.h"
+#include "syscall.h"
+#include "stdio.h"
+#include "nostd.h"
+#include "string.h"
 
 #if CONFIG_APP_PIN_INPUT_USART
 

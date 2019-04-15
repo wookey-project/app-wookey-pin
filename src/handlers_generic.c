@@ -1,7 +1,7 @@
 #include "handlers_generic.h"
 #include "libgui.h"
 #include "libfw.h"
-#include "api/string.h"
+#include "string.h"
 #include "img/wait.h"
 
 # include "img/zz.h"

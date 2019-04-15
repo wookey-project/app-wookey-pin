@@ -1,7 +1,7 @@
 #ifndef PIN_GUI_H
 #define PIN_GUI_H
 
-#include "api/types.h"
+#include "types.h"
 
 typedef enum {
     BOX_SET_PETPIN,

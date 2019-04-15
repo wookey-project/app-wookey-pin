@@ -29,8 +29,12 @@ APP_BUILD_DIR = $(BUILD_DIR)/apps/$(DIR_NAME)
 
 # Application CFLAGS, first yours...
 CFLAGS += -Isrc/ -Iinc/ -MMD -MP -Os
+CFLAGS += -I$(PROJ_FILES)/libs/gui/api
+CFLAGS += -I$(PROJ_FILES)/libs/firmware/api
+CFLAGS += -I$(PROJ_FILES)/drivers/socs/stm32f439/flash/api
 # and the SDK ones
 CFLAGS += $(APPS_CFLAGS)
+
 
 ###################################################################
 # About the link step
