@@ -576,10 +576,10 @@ int handle_dfu_confirmation(uint32_t *dfuhdr)
 
     logsize_t size = 0;
 
+#if CONFIG_APP_PIN_INPUT_SCREEN
     uint32_t magic = dfuhdr[0];
     uint32_t version = dfuhdr[1];
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
     memset(storage_info, 0x0, 256);
     snprintf(storage_info, 255, "header:        magic: %d\n   version:\n     %01d.%01d.%01d-%01d\n", magic,
             version >> 24 & 0xff,
