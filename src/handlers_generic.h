@@ -2,10 +2,10 @@
 #define HANDLERS_GENERIC_H_
 
 #include "autoconf.h"
-#include "syscall.h"
-#include "stdio.h"
-#include "nostd.h"
-#include "types.h"
+#include "libc/syscall.h"
+#include "libc/stdio.h"
+#include "libc/nostd.h"
+#include "libc/types.h"
 #include "wookey_ipc.h"
 #include "main.h"
 

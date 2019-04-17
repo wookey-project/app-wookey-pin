@@ -27,29 +27,17 @@ APP_BUILD_DIR = $(BUILD_DIR)/apps/$(DIR_NAME)
 # About the compilation flags
 ###################################################################
 
-# Application CFLAGS, first yours...
-CFLAGS += -Isrc/ -Iinc/ -MMD -MP -Os
-CFLAGS += -I$(PROJ_FILES)/libs/gui/api
-CFLAGS += -I$(PROJ_FILES)/libs/firmware/api
-CFLAGS += -I$(PROJ_FILES)/drivers/socs/stm32f439/flash/api
-# and the SDK ones
+# SDK Cflags
 CFLAGS += $(APPS_CFLAGS)
-
+# Application CFLAGS...
+CFLAGS += -Isrc/ -MMD -MP
 
 ###################################################################
 # About the link step
 ###################################################################
 
-# the layout file, must be named 'myapp.fw1.ld' for default. is overriden by
-# the SDK in multi-bank case.
-# this is an option of the linker.
-EXTRA_LDFLAGS ?= -Tpin.fw1.ld
-
 # linker options to add the layout file
 LDFLAGS += $(EXTRA_LDFLAGS) -L$(APP_BUILD_DIR)
-
-# generic linker options
-LDFLAGS += -fno-builtin -nostdlib -nostartfiles $(AFLAGS_GCC) -Wl,-Map=$(APP_BUILD_DIR)/$(APP_NAME).map
 
 # project's library you whish to use...
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
@@ -90,18 +78,12 @@ TODEL_DISTCLEAN += $(APP_BUILD_DIR) $(LDSCRIPT_NAME)
 
 .PHONY: app
 
-###################################################################
-# build targets (driver, core, SoC, Board... and local)
-###################################################################
-
-# all (default) build the app
-all: $(APP_BUILD_DIR) alldeps app
-
 ############################################################
-# eplicit dependency on the application libs and drivers
+# explicit dependency on the application libs and drivers
 # compiling the application requires the compilation of its
 # dependencies
-#
+###########################################################
+
 ## library dependencies
 LIBDEP := $(BUILD_DIR)/libs/libstd/libstd.a
 ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
@@ -168,6 +150,23 @@ $(EXTDEP):
 alldeps: libdep socdrvdep brddrvdep extdep
 
 ##########################################################
+# generic targets of all applications makefiles
+##########################################################
+
+show:
+	@echo
+	@echo "\t\tAPP_BUILD_DIR\t=> " $(APP_BUILD_DIR)
+	@echo
+	@echo "C sources files:"
+	@echo "\t\tSRC\t=> " $(SRC)
+	@echo "\t\tOBJ\t=> " $(OBJ)
+	@echo "\t\tDEP\t=> " $(DEP)
+	@echo
+	@echo "\t\tCFG\t=> " $(CFLAGS)
+
+
+# all (default) build the app
+all: $(APP_BUILD_DIR) alldeps app
 
 
 # app build the hex and elf binaries
