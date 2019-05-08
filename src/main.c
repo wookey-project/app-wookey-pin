@@ -249,8 +249,8 @@ int _main(uint32_t task_id)
     do {
         ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
     } while (ret != SYS_E_DONE);
-    if (   ipc_sync_cmd.magic == MAGIC_TASK_STATE_RESP
-        && ipc_sync_cmd.state == SYNC_ACKNOWLEDGE) {
+    if (   (ipc_sync_cmd.magic == MAGIC_TASK_STATE_RESP)
+        && (ipc_sync_cmd.state == SYNC_ACKNOWLEDGE)) {
         printf("smart has acknowledge end_of_init, continuing\n");
     }
 

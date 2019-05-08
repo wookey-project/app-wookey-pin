@@ -30,7 +30,7 @@ void handle_dfu_status(void)
     extern menu_desc_t status_menu;
     extern tile_desc_t status_main_tile;
 #endif
-
+    uint8_t ret;
     struct sync_command_data ipc_sync_cmd_data = { 0 };
     uint8_t id = get_smart_id();
     logsize_t size = sizeof(struct sync_command_data);
@@ -38,9 +38,14 @@ void handle_dfu_status(void)
     ipc_sync_cmd_data.magic = MAGIC_DFU_GET_FW_VERSION;
     ipc_sync_cmd_data.state = SYNC_ASK_FOR_DATA;
 
-    sys_ipc(IPC_SEND_SYNC, id, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
-    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
-
+    ret = sys_ipc(IPC_SEND_SYNC, id, sizeof(struct sync_command), (char*)&ipc_sync_cmd_data);
+    if(ret != SYS_E_DONE){
+        return;
+    }
+    ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+    if(ret != SYS_E_DONE){
+        return;
+    }
 #if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
     if (ipc_sync_cmd_data.magic == MAGIC_DFU_GET_FW_VERSION) {
         uint8_t dev = ipc_sync_cmd_data.data.u32[0] & 0xff;
@@ -182,7 +187,7 @@ void handle_external_events(bool *need_gui_refresh)
                 /* handling idle time */
                 uint64_t idle_time = gui_get_idle_time();
                 /* everty IDLE_LOCK time, update the Zz icon position */
-                if ((idle_time % IDLE_LOCK == 0)) {
+                if ((idle_time % IDLE_LOCK) == 0) {
                     tile_icon_t zz_icon = {
                         .data = zz,
                         .size = sizeof(zz)
@@ -396,6 +401,9 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 
     size = sizeof(struct sync_command_data);
     ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd_data);
+    if(ret != SYS_E_DONE){
+        goto err;
+    }
 
 #if PIN_DEBUG
     if (mode == SC_PET_PIN) {
@@ -412,7 +420,10 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 
     id = id_smart;
     size = sizeof(struct sync_command_data);
-    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+    ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd_data);
+    if(ret != SYS_E_DONE){
+        goto err;
+    }
 
 
     /********************************************************
@@ -422,7 +433,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
 #if CONFIG_APP_PIN_INPUT_SCREEN
     /* Updating remaining tries with what the token said */
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) {
-        if (mode == SC_USER_PIN && type == SC_REQ_AUTHENTICATE)
+        if ((mode == SC_USER_PIN) && (type == SC_REQ_AUTHENTICATE))
         {
             extern tile_desc_t status_se_tile;
             uint8_t remaining_tries = (uint8_t)ipc_sync_cmd_data.data.u32[0];
@@ -438,7 +449,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     }
 #endif
 
-    if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP && ipc_sync_cmd_data.state == SYNC_ACKNOWLEDGE)
+    if ((ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) && (ipc_sync_cmd_data.state == SYNC_ACKNOWLEDGE))
     {
         printf("Pin has been acknowledged by SMART\n");
         valid_pin = true;
@@ -496,7 +507,7 @@ int handle_petname_request(void)
         console_log("Confirm pet name ? (y/n)\n");
         console_show_prompt();
         console_readline(ack, (uint32_t*)&ack_len, 2);
-        if (ack_len == 1 && ack[0] == 'y') {
+        if ((ack_len == 1) && (ack[0] == 'y')) {
             validated=true;
         }
     } while (!validated);
@@ -534,7 +545,7 @@ int handle_petname_request(void)
 
     do {
       ret = sys_ipc(IPC_SEND_SYNC, id_smart, sizeof(struct sync_command_data), (char*)&ipc_sync_cmd_data);
-    } while (ret == SYS_E_BUSY);
+    } while (ret != SYS_E_DONE);
 
     printf("Pet name update has been acknowledged by SMART\n");
 #ifdef CONFIG_APP_PIN_INPUT_USART
@@ -667,7 +678,7 @@ int handle_petname_confirmation(const char *petname)
     console_log("Pet name is \"%s\". Is it Okay (y/n)?\n", petname);
     console_show_prompt();
     console_readline(ack, &ack_len, 2); /*FIXME: update API, set string... and size */
-    if (ack_len == 1 && ack[0] == 'n') {
+    if ((ack_len == 1) && (ack[0] == 'n')) {
         console_log("Invalid pet name !!!\n");
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     uint8_t pet_name_len = strlen(petname);
@@ -727,18 +738,18 @@ uint8_t handle_full_pin_cmd_request(void)
     sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
 
     /* handling pet pin update request */
-    if (   ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD
-        && ipc_sync_cmd.data.req.sc_type == SC_PET_PIN
-        && ipc_sync_cmd.data.req.sc_req  == SC_REQ_MODIFY) {
+    if (   (ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD)
+        && (ipc_sync_cmd.data.req.sc_type == SC_PET_PIN)
+        && (ipc_sync_cmd.data.req.sc_req  == SC_REQ_MODIFY)) {
         if (handle_pin_request(SC_PET_PIN, SC_REQ_MODIFY)) {
             printf("Error while handling Pet Pin !\n");
         } else {
             printf("Pet pin update done\n");
         }
     /* handling pet name update request */
-    } else if (   ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD
-               && ipc_sync_cmd.data.req.sc_type == SC_PET_NAME
-               && ipc_sync_cmd.data.req.sc_req  == SC_REQ_MODIFY) {
+    } else if (   (ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD)
+               && (ipc_sync_cmd.data.req.sc_type == SC_PET_NAME)
+               && (ipc_sync_cmd.data.req.sc_req  == SC_REQ_MODIFY)) {
 
         if (handle_petname_request()) {
             printf("Error while handling Pet name !\n");
@@ -746,9 +757,9 @@ uint8_t handle_full_pin_cmd_request(void)
             printf("Pet name update done\n");
         }
     /* handling user pin update request */
-    } else if (   ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD
-               && ipc_sync_cmd.data.req.sc_type == SC_USER_PIN
-               && ipc_sync_cmd.data.req.sc_req  == SC_REQ_MODIFY) {
+    } else if (   (ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD)
+               && (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN)
+               && (ipc_sync_cmd.data.req.sc_req  == SC_REQ_MODIFY)) {
         if (handle_pin_request(SC_USER_PIN, SC_REQ_MODIFY)) {
             printf("Error while handling User Pin !\n");
         } else {
@@ -787,7 +798,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
         }
         /* full mode, pet pin, pet name check and user pin are requested */
         if (authmode == FULL_AUTHENTICATION_MODE) {
-            if (ipc_sync_cmd.data.req.sc_type == SC_PET_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+            if ((ipc_sync_cmd.data.req.sc_type == SC_PET_PIN) && (ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE)) {
                 printf("smart requesting pet pin\n");
                 if (handle_pin_request(SC_PET_PIN, SC_REQ_AUTHENTICATE)) {
                     printf("Error while handling Pet Pin !\n");
@@ -795,7 +806,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
                     step++;
                 }
             }
-            if (ipc_sync_cmd.data.req.sc_type == SC_PET_NAME && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+            if ((ipc_sync_cmd.data.req.sc_type == SC_PET_NAME) && (ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE)) {
                 printf("smart requesting pet name confirmation\n");
                 if (handle_petname_confirmation(ipc_sync_cmd.data.req.sc_petname)) {
                     printf("Error while handling Pet name !\n");
@@ -804,7 +815,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
                     step++;
                 }
             }
-            if (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+            if ((ipc_sync_cmd.data.req.sc_type == SC_USER_PIN) && (ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE)) {
                 printf("smart requesting user pin\n");
                 if (handle_pin_request(SC_USER_PIN, SC_REQ_AUTHENTICATE)) {
                     printf("Error while handling User Pin !\n");
@@ -821,7 +832,7 @@ uint8_t handle_authentication(enum authentication_mode authmode)
         }
         /* Lite mode, only user Pin is requested */
         else if (authmode == LITE_AUTHENTICATION_MODE) {
-            if (ipc_sync_cmd.data.req.sc_type == SC_USER_PIN && ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE) {
+            if ((ipc_sync_cmd.data.req.sc_type == SC_USER_PIN) && (ipc_sync_cmd.data.req.sc_req == SC_REQ_AUTHENTICATE)) {
                 printf("smart requesting user pin\n");
                 if (handle_pin_request(SC_USER_PIN, SC_REQ_AUTHENTICATE)) {
                     printf("Error while handling User Pin !\n");
