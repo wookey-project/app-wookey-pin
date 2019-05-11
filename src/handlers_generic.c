@@ -593,9 +593,9 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
 
     memset(storage_info, 0x0, 256);
     snprintf(storage_info, 255, "header:        magic: %d\n   version:\n     %01d.%01d.%01d-%01d\n", magic,
-            version >> 24 & 0xff,
-            version >> 16 & 0xff,
-            version >>  8 & 0xff,
+            (version >> 24) & 0xff,
+            (version >> 16) & 0xff,
+            (version >>  8) & 0xff,
             version       & 0xff);
 #endif
 
@@ -609,7 +609,7 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
     console_log("Is it Okay (y/n)?\n");
     console_show_prompt();
     console_readline(ack, &ack_len, 2); /*FIXME: update API, set string... and size */
-    if (ack_len == 1 && ack[0] == 'n') {
+    if ((ack_len == 1) && (ack[0] == 'n')) {
         console_log("Invalid DFU file !!!\n");
 #elif CONFIG_APP_PIN_INPUT_SCREEN
     if (pin_request_string_validation("DFU header", storage_info, strlen(storage_info))) {
@@ -700,7 +700,8 @@ int handle_petname_confirmation(const char *petname)
         ipc_sync_cmd.magic = MAGIC_CRYPTO_PIN_RESP;
         ipc_sync_cmd.state = SYNC_FAILURE;
         size = sizeof(struct sync_command);
-        ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+        sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+        /* No need to check IPC ret since we go to error anyways ... */
         goto err;
 
     } else {
@@ -708,6 +709,9 @@ int handle_petname_confirmation(const char *petname)
         ipc_sync_cmd.state = SYNC_ACKNOWLEDGE;
         size = sizeof(struct sync_command);
         ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
+        if(ret != SYS_E_DONE){
+            goto err;
+        }
     }
 
     return 0;
@@ -728,6 +732,7 @@ uint8_t handle_full_pin_cmd_request(void)
     struct sync_command_data  ipc_sync_cmd = { 0 };
     uint8_t id = id_smart;
     logsize_t size = sizeof(struct sync_command_data);
+    uint8_t ret;
 
     /*
      * get the PIN CMD request from SMART. Should be one of:
@@ -735,7 +740,10 @@ uint8_t handle_full_pin_cmd_request(void)
      * - User Pin modify
      * - Pet name modify
      */
-    sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+    ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+    if(ret != SYS_E_DONE){
+        goto err;
+    }
 
     /* handling pet pin update request */
     if (   (ipc_sync_cmd.magic            == MAGIC_CRYPTO_PIN_CMD)
@@ -770,6 +778,8 @@ uint8_t handle_full_pin_cmd_request(void)
         return 1;
     }
     return 0;
+err:
+    return 1;
 }
 
 
@@ -781,12 +791,16 @@ uint8_t handle_authentication(enum authentication_mode authmode)
     uint8_t id;
     logsize_t size = 0;
     struct sync_command_data  ipc_sync_cmd = { 0 };
+    uint8_t ret;
 
     id = id_smart;
     size = sizeof(struct sync_command_data);
 
     while (!authenticated) {
-        sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+        ret = sys_ipc(IPC_RECV_SYNC, &id, &size, (char*)&ipc_sync_cmd);
+        if(ret != SYS_E_DONE){
+            goto err;
+        }
 #if PIN_DEBUG
         printf("req.sc_type: %d\n", ipc_sync_cmd.data.req.sc_type);
         printf("req.sc_req: %d\n", ipc_sync_cmd.data.req.sc_req);
@@ -899,6 +913,7 @@ uint8_t handle_settings_request(t_box signal)
     ret = sys_ipc(IPC_SEND_SYNC, id_smart, size, (char*)&ipc_sync_cmd);
     if (ret != SYS_E_DONE) {
         printf("unable to send settings request to smart!\n");
+        goto err;
     }
     return 0;
 err:
