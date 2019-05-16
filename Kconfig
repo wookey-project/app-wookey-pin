@@ -8,6 +8,8 @@ config APP_PIN
   ---help---
     Say y if you want to embbed USER custom application.
 
+if APP_PIN
+
 config APP_PIN_FW
   bool "Pin App for firmware mode"
   depends on APP_PIN
@@ -310,5 +312,7 @@ config APP_PIN_DOMAIN
     depends on APP_PIN
     int "PIN app security domain"
     default 0
+
+endif
 
 endmenu
