@@ -14,6 +14,7 @@
 
 extern menu_desc_t main_menu;
 extern menu_desc_t dfu_menu;
+extern menu_desc_t info_menu;
 
 uint64_t storage_size  = 0;
 
@@ -70,18 +71,20 @@ void handle_external_events(bool *need_gui_refresh)
 {
     struct sync_command_data sync_command_ack = { 0 };
     logsize_t size = sizeof(struct sync_command_data);
-    uint8_t id = get_smart_id();
+    uint8_t id = 0;
 
     if ((sys_ipc(IPC_RECV_ASYNC, &id, &size, (char*)&sync_command_ack)) == SYS_E_DONE) {
 
         switch (sync_command_ack.magic) {
             case MAGIC_DFU_HEADER_SEND:
                 {
+                    if (id != get_smart_id()) {
+                        goto end_ext_events;
+                    }
                     /* requesting user validation for header, from now on,
                      * the printed menu will be the DFU menu (no access
                      * to settings or status)
                      */
-
 #if PIN_DEBUG
                     printf("receiving ack request for magic %08x, version %d\n", sync_command_ack.data.u32[0], sync_command_ack.data.u32[1]);
 #endif
@@ -94,6 +97,9 @@ void handle_external_events(bool *need_gui_refresh)
 
             case MAGIC_DFU_DWNLOAD_FINISHED:
                 {
+                    if (id != get_smart_id()) {
+                        goto end_ext_events;
+                    }
 #if PIN_DEBUG
                     printf("DFU download finished. Going back to main\n");
 #endif
@@ -112,6 +118,9 @@ void handle_external_events(bool *need_gui_refresh)
                 }
             case MAGIC_DFU_DWNLOAD_STARTED:
                 {
+                    if (id != get_smart_id()) {
+                        goto end_ext_events;
+                    }
 
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
                     gui_lock_touch();
@@ -132,6 +141,9 @@ void handle_external_events(bool *need_gui_refresh)
                 }
             case MAGIC_STORAGE_SCSI_BLOCK_NUM_RESP:
                 {
+                    if (id != get_smart_id()) {
+                        goto end_ext_events;
+                    }
                     uint32_t gsize = 0;
                     uint32_t gsize_pow = 0;
                     uint32_t block_size = sync_command_ack.data.u32[0];
@@ -156,12 +168,55 @@ void handle_external_events(bool *need_gui_refresh)
 #endif
                     break;
                 }
+            case MAGIC_INFORMATIONAL_MSG:
+                {
+                    if (id != get_smart_id()) {
+                        goto end_ext_events;
+                    }
+                   /* receiving msg from smart (info, error...) to be printed
+                    * The message is returned to the user and acknowledge
+                    * to smart as printed */
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+                    extern tile_desc_t info_main_tile;
+                    char *ext_info = NULL;
+                    /* sanitation, terminating the string */
+                    sync_command_ack.data.c[63] = '\0';
+                    ext_info = &(sync_command_ack.data.c[0]);
+                    tile_text_t info_text = {
+                        .text = ext_info,
+                        .align = TXT_ALIGN_LEFT
+                    };
+                    gui_set_tile_text(&info_text, info_main_tile);
+                    gui_set_menu(info_menu);
+                    *need_gui_refresh = true;
+#endif
+                    break;
+                }
+            case MAGIC_AUTH_STATE_PASSED:
+                {
+                    if (id != get_crypto_id()) {
+                        printf("err: invalid source for magic!\n");
+                        goto end_ext_events;
+                    }
+                    /* here we are handling external event of the gui main loop, this means
+                     * that the authentication sequence have been passed. We can acknowledge */
+                    size = sizeof(struct sync_command);
+                    sync_command_ack.magic = MAGIC_AUTH_STATE_PASSED;
+                    sync_command_ack.state = SYNC_ACKNOWLEDGE;
+
+                    if ((sys_ipc(IPC_SEND_SYNC, id, size, (char*)&sync_command_ack)) != SYS_E_DONE) {
+                        printf("err: unable to acknowledge third party authentication check\n");
+                        goto end_ext_events;
+                    }
+                    break;
+                }
             default:
                 {
                     /* no action for others */
                     break;
                 }
         }
+
     }
 #ifdef CONFIG_APP_PIN_INPUT_SCREEN
     else {
@@ -230,6 +285,7 @@ void handle_external_events(bool *need_gui_refresh)
     }
 #endif
 
+end_ext_events:
     return;
 
 }

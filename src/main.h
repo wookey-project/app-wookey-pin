@@ -12,4 +12,6 @@ t_boot_mode get_mode(void);
 
 uint8_t get_smart_id(void);
 
+uint8_t get_crypto_id(void);
+
 #endif
