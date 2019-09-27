@@ -71,7 +71,7 @@ void handle_external_events(bool *need_gui_refresh)
 {
     struct sync_command_data sync_command_ack = { 0 };
     logsize_t size = sizeof(struct sync_command_data);
-    uint8_t id = 0;
+    uint8_t id = ANY_APP;
 
     if ((sys_ipc(IPC_RECV_ASYNC, &id, &size, (char*)&sync_command_ack)) == SYS_E_DONE) {
 
