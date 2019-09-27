@@ -55,11 +55,18 @@
 #include "handlers_generic.h"
 
 static uint8_t id_smart;
+static uint8_t id_crypto;
 
 uint8_t get_smart_id(void)
 {
     return id_smart;
 }
+
+uint8_t get_crypto_id(void)
+{
+    return id_crypto;
+}
+
 
 static volatile t_boot_mode cur_mode = MODE_FW;
 
@@ -140,11 +147,19 @@ int _main(uint32_t task_id)
         if (ret != SYS_E_DONE) {
             goto err;
         }
+        ret = sys_init(INIT_GETTASKID, "crypto", &id_crypto);
+        if (ret != SYS_E_DONE) {
+            goto err;
+        }
         cur_mode = MODE_FW;
     }
     if (is_in_dfu_mode()) {
         printf("current mode is DFU mode\n");
         ret = sys_init(INIT_GETTASKID, "dfusmart", &id_smart);
+        if (ret != SYS_E_DONE) {
+            goto err;
+        }
+        ret = sys_init(INIT_GETTASKID, "dfucrypto", &id_crypto);
         if (ret != SYS_E_DONE) {
             goto err;
         }
