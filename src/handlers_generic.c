@@ -3,6 +3,7 @@
 #include "libfw.h"
 #include "libc/string.h"
 #include "img/wait.h"
+#include "lock2.h"
 
 # include "img/zz.h"
 
@@ -955,6 +956,10 @@ uint8_t handle_settings_request(t_box signal)
         }
         case BOX_LOCK:
         {
+            /* first we update the current graphical content */
+            tft_fill_rectangle(0,240,0,320,lock_colormap[0],lock_colormap[1],lock_colormap[2]);
+            tft_rle_image(0,0,lock_width,lock_height,lock_colormap,lock,sizeof(lock));
+            /* then we prepare the IPC for SMART */
             ipc_sync_cmd.magic = MAGIC_SETTINGS_LOCK;
             size = sizeof(struct sync_command);
             break;
