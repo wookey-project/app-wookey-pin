@@ -82,6 +82,9 @@ void handle_external_events(bool *need_gui_refresh)
                     if (id != get_smart_id()) {
                         goto end_ext_events;
                     }
+#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+                    gui_unlock_touch();
+#endif
                     /* requesting user validation for header, from now on,
                      * the printed menu will be the DFU menu (no access
                      * to settings or status)
