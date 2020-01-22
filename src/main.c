@@ -111,7 +111,7 @@ int _main(uint32_t task_id)
 
 #if CONFIG_WOOKEY_V1
     if (spi1_early_init()) {
-#elif CONFIG_WOOKEY_V2
+#elif defined(CONFIG_WOOKEY_V2) || defined(CONFIG_WOOKEY_V3)
     if (spi2_early_init()) {
 #else
 # error "unsupported board for graphical interface"
