@@ -67,7 +67,15 @@ void handle_dfu_status(void)
 #endif
 }
 
-
+#if __GNUC__ > 8
+/*
+ * INFO: Here, we cast a packed struct member address as a uint32_t pointer.
+ * This is *not* an error.
+ * Gcc 9 warning is a false positive.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
 void handle_external_events(bool *need_gui_refresh)
 {
     struct sync_command_data sync_command_ack = { 0 };
@@ -293,6 +301,9 @@ end_ext_events:
     return;
 
 }
+#if __GNUC__ > 8
+#pragma GCC diagnostic pop
+#endif
 
 #if CONFIG_APP_PIN_INPUT_MOCKUP
 int handle_pin_request(__attribute__((unused)) uint8_t mode, __attribute__((unused)) uint8_t type)
