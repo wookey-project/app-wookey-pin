@@ -28,18 +28,6 @@ config APP_PIN_DFU
     Say y if you want to embbed Pin custom application in DFU.
 
 
-config APP_PIN_NUMSLOTS
-  int "Number of required slots"
-  depends on APP_PIN
-  default 1
-  ---help---
-    specify the number of slots required by the application text and data/bss.
-    remember that the number of total slots is limited by the hardware.
-    For example, there is 8 32kb sized slots in STM32F4, reduced to 7 when using SHM for
-    .text + .data in flash, and 8 (reduced to 7 with SHM) slots of 16kb in RAM.
-    This choice has an impact on the total number of applications that can be loaded
-    in the firmware.
-
 config APP_PIN_STACKSIZE
   int "Stack size"
   depends on APP_PIN
@@ -94,10 +82,10 @@ config APP_PIN_MAX_PINTRIES
   Pad is presented before reseting the card
 
 choice
-  prompt "PIN human interaction mode"
+  prompt "PIN human interaction mode in firmware mode"
   depends on APP_PIN
-  default APP_PIN_INPUT_USART
-    config APP_PIN_INPUT_USART
+  default APP_PIN_FW_INPUT_SCREEN
+    config APP_PIN_FW_INPUT_USART
       select USR_LIB_CONSOLE
       select USR_DRV_USART
       bool "PIN is asked through USART"
@@ -105,7 +93,7 @@ choice
       ---help---
       User interaction for PIN ask is done using dedicated
       USART interface
-    config APP_PIN_INPUT_SCREEN
+    config APP_PIN_FW_INPUT_SCREEN
       bool "PIN is asked through graphical interface"
       select USR_LIB_GUI
       select USR_DRV_SPI
@@ -114,7 +102,7 @@ choice
       ---help---
       User interaction for PIN ask is done using dedicated
       screen/touchscreen couple
-    config APP_PIN_INPUT_MOCKUP
+    config APP_PIN_FW_INPUT_MOCKUP
       bool "PIN is in mockup mode (no user interaction)"
       ---help---
       User interaction for PIN is not needed, which means
@@ -122,7 +110,37 @@ choice
       mode instead of asked to the user
 endchoice
 
-if APP_PIN_INPUT_MOCKUP
+choice
+  prompt "PIN human interaction mode in dfu mode"
+  depends on APP_PIN
+  default APP_PIN_DFU_INPUT_SCREEN
+    config APP_PIN_DFU_INPUT_USART
+      select USR_LIB_CONSOLE
+      select USR_DRV_USART
+      bool "PIN is asked through USART"
+      select USR_LIB_CONSOLE
+      ---help---
+      User interaction for PIN ask is done using dedicated
+      USART interface
+    config APP_PIN_DFU_INPUT_SCREEN
+      bool "PIN is asked through graphical interface"
+      select USR_LIB_GUI
+      select USR_DRV_SPI
+      select USR_DRV_AD7843
+      select USR_DRV_ILI9341
+      ---help---
+      User interaction for PIN ask is done using dedicated
+      screen/touchscreen couple
+    config APP_PIN_DFU_INPUT_MOCKUP
+      bool "PIN is in mockup mode (no user interaction)"
+      ---help---
+      User interaction for PIN is not needed, which means
+      that the pin is hardcoded in the source code for test
+      mode instead of asked to the user
+endchoice
+
+
+if APP_PIN_DFU_INPUT_MOCKUP || APP_PIN_FW_INPUT_MOCKUP
 
 config APP_PIN_MOCKUP_USER_PIN_VALUE
    string "Mockup user pin value"
@@ -179,7 +197,7 @@ config APP_PIN_MOCKUP_DFU_PET_PIN_LEN
 
 endif
 
-if APP_PIN_INPUT_USART
+if APP_PIN_DFU_INPUT_USART || APP_PIN_FW_INPUT_USART
   config APP_PIN_INPUT_USART_ID
   int "PIN USART interface identifier"
   range 1 6

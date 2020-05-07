@@ -1,3 +1,4 @@
+#include "main.h"
 #include "handlers_generic.h"
 #include "libgui.h"
 #include "libfw.h"
@@ -19,7 +20,7 @@ extern menu_desc_t info_menu;
 
 uint64_t storage_size  = 0;
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
 static char se_info[32] = { 0 };
 static char storage_info[256];
 static char version_info[32];
@@ -28,7 +29,7 @@ static char version_info[32];
 
 void handle_dfu_status(void)
 {
-#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#if APP_PIN_INPUT_SCREEN
     extern menu_desc_t status_menu;
     extern tile_desc_t status_main_tile;
 #endif
@@ -48,7 +49,7 @@ void handle_dfu_status(void)
     if(ret != SYS_E_DONE){
         return;
     }
-#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#if APP_PIN_INPUT_SCREEN
     if (ipc_sync_cmd_data.magic == MAGIC_DFU_GET_FW_VERSION) {
         uint8_t dev = ipc_sync_cmd_data.data.u32[0] & 0xff;
         uint8_t patch = (ipc_sync_cmd_data.data.u32[0] >> 8) & 0xff;
@@ -90,7 +91,7 @@ void handle_external_events(bool *need_gui_refresh)
                     if (id != get_smart_id()) {
                         goto end_ext_events;
                     }
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
                     gui_unlock_touch();
 #endif
                     /* requesting user validation for header, from now on,
@@ -115,7 +116,7 @@ void handle_external_events(bool *need_gui_refresh)
 #if PIN_DEBUG
                     printf("DFU download finished. Going back to main\n");
 #endif
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
                     gui_unlock_touch();
                     gui_set_menu(main_menu);
 #endif
@@ -134,7 +135,7 @@ void handle_external_events(bool *need_gui_refresh)
                         goto end_ext_events;
                     }
 
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
                     gui_lock_touch();
                     gui_set_menu(dfu_menu);
 #endif
@@ -168,7 +169,7 @@ void handle_external_events(bool *need_gui_refresh)
                     storage_size_pow /= (1024 * 1024 * 1024);
                     gsize = (uint32_t)storage_size;
                     gsize_pow = (uint32_t)storage_size_pow;
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
                     extern tile_desc_t storage_main_tile;
                     memset(storage_info, 0x0, sizeof(storage_info));
                     snprintf(storage_info, 255, "storage:\n%d GB,%d GiB\nstorage block\nsize:\n%d bytes", gsize, gsize_pow, block_size);
@@ -188,7 +189,7 @@ void handle_external_events(bool *need_gui_refresh)
                    /* receiving msg from smart (info, error...) to be printed
                     * The message is returned to the user and acknowledge
                     * to smart as printed */
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
                     extern tile_desc_t info_main_tile;
                     char *ext_info = NULL;
                     /* sanitation, terminating the string */
@@ -230,7 +231,7 @@ void handle_external_events(bool *need_gui_refresh)
         }
 
     }
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     else {
         if (is_in_fw_mode()) {
             /* no IPC received. Checking for idle time
@@ -305,27 +306,27 @@ end_ext_events:
 #pragma GCC diagnostic pop
 #endif
 
-#if CONFIG_APP_PIN_INPUT_MOCKUP
+#if APP_PIN_INPUT_MOCKUP
 int handle_pin_request(__attribute__((unused)) uint8_t mode, __attribute__((unused)) uint8_t type)
 #else
 int handle_pin_request(uint8_t mode, uint8_t type)
 #endif
 {
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     extern menu_desc_t error_menu;
 #endif
     uint8_t pin_len;
     uint8_t id_smart = get_smart_id();
     bool change_ok = false;
 
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     char pin[PIN_MAX_LEN + 1] = { 0 };
     char pin2[PIN_MAX_LEN + 1] = { 0 };
     pin_len=CONFIG_APP_PIN_MAX_PIN_LEN;
-#elif CONFIG_APP_PIN_INPUT_USART
+#elif APP_PIN_INPUT_USART
     char pin[PIN_MAX_LEN + 1] = { 0 };
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     char pin[PIN_MAX_LEN + 1] = { 0 };
     pin_len = CONFIG_APP_PIN_MAX_PIN_LEN;
 #endif
@@ -354,7 +355,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     }
 #endif
 
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
     if (mode == SC_PET_PIN) {
         if (type == SC_REQ_AUTHENTICATE) {
             console_log("Enter pet pin code please\n");
@@ -373,7 +374,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     console_show_prompt();
     console_readline(pin, (uint32_t*)&pin_len, PIN_MAX_LEN); /*FIXME: update API, set string... and size */
     console_log("pin registered!\n");
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
 
     if (mode == SC_PET_PIN) {
         if (type == SC_REQ_AUTHENTICATE) {
@@ -396,26 +397,26 @@ int handle_pin_request(uint8_t mode, uint8_t type)
           }
         }
     }
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     if (mode == SC_PET_PIN) {
         if (type == SC_REQ_AUTHENTICATE) {
-            if (get_mode() == MODE_FW) {
+#ifndef MODE_DFU
                 memcpy(pin, CONFIG_APP_PIN_MOCKUP_PET_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN);
                 pin_len = CONFIG_APP_PIN_MOCKUP_PET_PIN_LEN;
-            } else { /* mode DFU */
+#else
                 memcpy(pin, CONFIG_APP_PIN_MOCKUP_DFU_PET_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_DFU_PET_PIN_LEN);
                 pin_len = CONFIG_APP_PIN_MOCKUP_DFU_PET_PIN_LEN;
-            }
+#endif
         }
     } else if (mode == SC_USER_PIN) {
         if (type == SC_REQ_AUTHENTICATE) {
-            if (get_mode() == MODE_FW) {
+#ifndef MODE_DFU
                 memcpy(pin, CONFIG_APP_PIN_MOCKUP_USER_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN);
                 pin_len = CONFIG_APP_PIN_MOCKUP_USER_PIN_LEN;
-            } else {
+#else
                 memcpy(pin, CONFIG_APP_PIN_MOCKUP_DFU_USER_PIN_VALUE, CONFIG_APP_PIN_MOCKUP_DFU_USER_PIN_LEN);
                 pin_len = CONFIG_APP_PIN_MOCKUP_DFU_USER_PIN_LEN;
-            }
+#endif
         }
     }
 #else
@@ -428,9 +429,9 @@ int handle_pin_request(uint8_t mode, uint8_t type)
      * print a 'wait message', as smart takes some time
      * to check and initiate the secure channel
      *******************************************************/
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
     console_log("Please wait...\n");
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
     tft_set_cursor_pos(20,160);
     if (is_in_fw_mode()) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
@@ -441,7 +442,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
         tft_rle_image(97, 137, 45, 45, wait_dfu_colormap, wait, sizeof(wait));
     }
 
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     /* nothing to do */
 #else
 # error "input mode must be set"
@@ -501,7 +502,7 @@ int handle_pin_request(uint8_t mode, uint8_t type)
      * Depending on what SMART said, indicate the current status
      *******************************************************/
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     /* Updating remaining tries with what the token said */
     if (ipc_sync_cmd_data.magic == MAGIC_CRYPTO_PIN_RESP) {
         if ((mode == SC_USER_PIN) && (type == SC_REQ_AUTHENTICATE))
@@ -524,22 +525,22 @@ int handle_pin_request(uint8_t mode, uint8_t type)
     {
         printf("Pin has been acknowledged by SMART\n");
         valid_pin = true;
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
         console_log("valid PIN, continuing...\n");
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
         tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_set_cursor_pos(20,160);
         tft_setfg(0,0,0);
         tft_setbg(249,249,249);
         tft_puts("Pin ok !...");
 
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
         /* nothing to do */
 #else
 # error "input mode must be set"
 #endif
     } else {
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
         gui_set_menu(error_menu);
 #endif
         printf("Smart said that PIN is invalid\n");
@@ -564,7 +565,7 @@ int handle_petname_request(void)
     struct sync_command_data ipc_sync_cmd_data = { 0 };
     uint8_t ret = 0;
 
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
     char petname[24 + 1] = { 0 };
     uint8_t petname_len = 0;
     char ack[2] = { 0 };
@@ -582,7 +583,7 @@ int handle_petname_request(void)
             validated=true;
         }
     } while (!validated);
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
 
     char petname[24 + 1] = { 0 };
     uint8_t max_petname_len = 24;
@@ -596,7 +597,7 @@ int handle_petname_request(void)
     tft_puts(" Pet name ");
     tft_set_cursor_pos(20,190);
     tft_puts("  registered ");
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     char petname[24 + 1] = { 0 };
     memcpy(petname, "Dark Vador", 10);
     /* mockup mode has no pet name check */
@@ -619,9 +620,9 @@ int handle_petname_request(void)
     } while (ret != SYS_E_DONE);
 
     printf("Pet name update has been acknowledged by SMART\n");
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
     console_log("pet name update done\n");
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
     tft_fill_rectangle(0,240,0,320,249,249,249);
     tft_set_cursor_pos(20,160);
     tft_setfg(0,0,0);
@@ -630,7 +631,7 @@ int handle_petname_request(void)
     tft_set_cursor_pos(20,190);
     tft_puts("updated !");
 
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     /* nothing to do */
 #else
 # error "input mode must be set"
@@ -658,7 +659,7 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
 
     logsize_t size = 0;
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     uint32_t magic = dfuhdr[0];
     uint32_t version = dfuhdr[1];
 
@@ -670,7 +671,7 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
             version       & 0xff);
 #endif
 
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
     char ack[2] = { 0 };
     uint32_t ack_len = 0;
 
@@ -682,7 +683,7 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
     console_readline(ack, &ack_len, 2); /*FIXME: update API, set string... and size */
     if ((ack_len == 1) && (ack[0] == 'n')) {
         console_log("Invalid DFU file !!!\n");
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
     if (pin_request_string_validation("DFU header", storage_info, strlen(storage_info))) {
         tft_fill_rectangle(0,240,0,320,249,249,249);
         tft_set_cursor_pos(20,160);
@@ -691,14 +692,14 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
         tft_puts(" Invalid DFU ");
         tft_set_cursor_pos(20,190);
         tft_puts("   Header!   ");
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     if (0) {
         /* mockup mode has no pet name check */
 #else
 # error "input mode must be set"
 #endif
         printf("user said DFU hdr is invalid!\n");
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
         gui_force_refresh();
 #endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_INVALID;
@@ -709,7 +710,7 @@ int handle_dfu_confirmation(__attribute__((unused))uint32_t *dfuhdr)
 
     } else {
         printf("user said DFU hdr is valid!\n");
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
         gui_force_refresh();
 #endif
         ipc_sync_cmd.magic = MAGIC_DFU_HEADER_VALID;
@@ -730,7 +731,7 @@ err:
  * - Pet name validation by user (or autovalid in mockup mode)
  * - Pet name validation response (Ack/Nack) to smart
  *****************************************************************/
-#if CONFIG_APP_PIN_INPUT_MOCKUP
+#if APP_PIN_INPUT_MOCKUP
 int handle_petname_confirmation(__attribute__((unused)) const char *petname)
 #else
 int handle_petname_confirmation(const char *petname)
@@ -742,7 +743,7 @@ int handle_petname_confirmation(const char *petname)
 
     struct sync_command      ipc_sync_cmd;
 
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
     char ack[2] = { 0 };
     uint32_t ack_len = 0;
 
@@ -751,7 +752,7 @@ int handle_petname_confirmation(const char *petname)
     console_readline(ack, &ack_len, 2); /*FIXME: update API, set string... and size */
     if ((ack_len == 1) && (ack[0] == 'n')) {
         console_log("Invalid pet name !!!\n");
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
     uint8_t pet_name_len = strlen(petname);
 
     if (pin_request_string_validation("pet name", petname, pet_name_len)) {
@@ -762,7 +763,7 @@ int handle_petname_confirmation(const char *petname)
         tft_puts(" Invalid Pet ");
         tft_set_cursor_pos(20,190);
         tft_puts("   Name !    ");
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     if (0) {
         /* mockup mode has no pet name check */
 #else
@@ -938,7 +939,7 @@ err:
     return 1;
 }
 
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
 uint8_t handle_settings_request(t_box signal)
 {
     uint8_t id_smart = get_smart_id();

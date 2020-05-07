@@ -13,39 +13,76 @@
 #include "libc/nostd.h"
 #include "libc/string.h"
 
-#if CONFIG_APP_PIN_INPUT_USART
+#if MODE_DFU
 
-# include "libusart.h"
-# include "libconsole.h"
+# if CONFIG_APP_PIN_DFU_INPUT_USART
 
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#  include "libusart.h"
+#  include "libconsole.h"
 
-# include "gui_pin.h"
-# include "lock2.h"
-# include "fail.h"
-# include "libspi.h"
-# include "libtouch.h"
-# include "libtft.h"
-# include "libgui.h"
-# include "gui.h"
+# elif CONFIG_APP_PIN_DFU_INPUT_SCREEN
 
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#  include "gui_pin.h"
+#  include "lock2.h"
+#  include "fail.h"
+#  include "libspi.h"
+#  include "libtouch.h"
+#  include "libtft.h"
+#  include "libgui.h"
+#  include "gui.h"
 
-# if CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+# elif CONFIG_APP_PIN_DFU_INPUT_MOCKUP
 
-# include "gui_pin.h"
-# include "lock2.h"
-# include "fail.h"
-# include "libspi.h"
-# include "libtouch.h"
-# include "libtft.h"
-# include "libgui.h"
-# include "gui.h"
+#  if CONFIG_APP_PIN_DFU_MOCKUP_SHOW_MENU
+
+#   include "gui_pin.h"
+#   include "lock2.h"
+#   include "fail.h"
+#   include "libspi.h"
+#   include "libtouch.h"
+#   include "libtft.h"
+#   include "libgui.h"
+#   include "gui.h"
+
+#  endif
 
 # endif
 
 #else
-# error "please specify input mode"
+
+# if CONFIG_APP_PIN_FW_INPUT_USART
+
+#  include "libusart.h"
+#  include "libconsole.h"
+
+# elif CONFIG_APP_PIN_FW_INPUT_SCREEN
+
+#  include "gui_pin.h"
+#  include "lock2.h"
+#  include "fail.h"
+#  include "libspi.h"
+#  include "libtouch.h"
+#  include "libtft.h"
+#  include "libgui.h"
+#  include "gui.h"
+
+# elif CONFIG_APP_PIN_FW_INPUT_MOCKUP
+
+#  if CONFIG_APP_PIN_FW_MOCKUP_SHOW_MENU
+
+#   include "gui_pin.h"
+#   include "lock2.h"
+#   include "fail.h"
+#   include "libspi.h"
+#   include "libtouch.h"
+#   include "libtft.h"
+#   include "libgui.h"
+#   include "gui.h"
+
+#  endif
+
+# endif
+
 #endif
 
 
@@ -68,13 +105,6 @@ uint8_t get_crypto_id(void)
 }
 
 
-static volatile t_boot_mode cur_mode = MODE_FW;
-
-t_boot_mode get_mode(void)
-{
-    return cur_mode;
-}
-
 /******************************************************
  * The task main function, called by do_starttask().
  * This is the user application code entrypoint after
@@ -94,7 +124,7 @@ int _main(uint32_t task_id)
 
     printf("Hello ! I'm pin, my id is %x\n", task_id);
 
-#ifdef CONFIG_APP_PIN_INPUT_USART
+#if APP_PIN_INPUT_USART
 
     /* USART mode: eclaring an USART device to interact */
 
@@ -105,7 +135,7 @@ int _main(uint32_t task_id)
     }
     printf("Registered USART through libshell %d\n", ret);
 
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
 
     /* graphical mode: declaring graphical devices */
 
@@ -132,7 +162,7 @@ int _main(uint32_t task_id)
     }
 
     printf("Registered SPI1, Touchscreen and TFT.\n");
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
     /* mockup mode: external I/O only if requested */
 
 #else
@@ -141,7 +171,7 @@ int _main(uint32_t task_id)
 
     /* get back smart task id, as we communicate with it */
 
-    if (is_in_fw_mode()) {
+#ifndef MODE_DFU
         printf("current mode is FW mode\n");
         ret = sys_init(INIT_GETTASKID, "smart", &id_smart);
         if (ret != SYS_E_DONE) {
@@ -151,9 +181,7 @@ int _main(uint32_t task_id)
         if (ret != SYS_E_DONE) {
             goto err;
         }
-        cur_mode = MODE_FW;
-    }
-    if (is_in_dfu_mode()) {
+#else
         printf("current mode is DFU mode\n");
         ret = sys_init(INIT_GETTASKID, "dfusmart", &id_smart);
         if (ret != SYS_E_DONE) {
@@ -163,8 +191,7 @@ int _main(uint32_t task_id)
         if (ret != SYS_E_DONE) {
             goto err;
         }
-        cur_mode = MODE_DFU;
-    }
+#endif
     if (id_smart == 0) {
         printf("error while getting id smart!\n");
         goto err;
@@ -186,7 +213,7 @@ int _main(uint32_t task_id)
      * which are now memory-mapped
      *******************************************/
 
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     if (tft_init()) {
         printf("error during TFT initialization!\n");
     }
@@ -194,7 +221,7 @@ int _main(uint32_t task_id)
         printf("error during Touch initialization!\n");
     }
     gui_init(240,320, handle_external_events);
-    if (is_in_dfu_mode()) {
+#ifdef MODE_DFU
         rgb_color_t clr;
         /* in DFU mode, we update the pin pad colormap */
         clr.r = 179; clr.g = 118; clr.b = 197;
@@ -204,9 +231,9 @@ int _main(uint32_t task_id)
         clr.r = 132; clr.g = 2; clr.b = 180;
         pin_set_bg_color(&clr);
         init_dfu_gui();
-    } else if (is_in_fw_mode()) {
+#else
         init_fw_gui();
-    }
+#endif
 
     if (is_in_fw_mode()) {
         tft_fill_rectangle(0,240,0,320,lock_colormap[0],lock_colormap[1],lock_colormap[2]);
@@ -216,7 +243,7 @@ int _main(uint32_t task_id)
         tft_rle_image(0,0,lock_width,lock_height,lock_dfu_colormap,lock,sizeof(lock));
     }
 
-#elif CONFIG_APP_PIN_INPUT_USART
+#elif APP_PIN_INPUT_USART
     /*
      * in the specific case of usart, the readline() function allocate
      * the string. The pin variable is then not a table but a string pointer
@@ -228,7 +255,7 @@ int _main(uint32_t task_id)
         printf("error during configuration of USART4\n");
     }
     console_log("[USART4] Pin initialized usart...\n");
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
  /* no screen config in mokcup */
 #else
 # error "input type must be set"
@@ -287,7 +314,7 @@ int _main(uint32_t task_id)
      ************************************************************/
 
 
-#if    CONFIG_APP_PIN_INPUT_USART
+#if    APP_PIN_INPUT_USART
 
     /*
      * nothing to do. The advanced settings and user interaction loop
@@ -299,7 +326,7 @@ int _main(uint32_t task_id)
         sys_yield();
     }
 
-#elif CONFIG_APP_PIN_INPUT_SCREEN
+#elif APP_PIN_INPUT_SCREEN
 
     /*
      * initialize the nominal graphic interace and wait for user
@@ -311,7 +338,7 @@ int _main(uint32_t task_id)
 //        menu_get_events();
     /* should return to do_endoftask() */
 
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif APP_PIN_INPUT_MOCKUP
 
     /* nothing to do except handling IPC */
     bool refresh = false;
