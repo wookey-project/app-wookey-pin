@@ -21,6 +21,8 @@
 # include "img/dfu.h"
 # include "img/zz.h"
 
+#include "libc/sanhandlers.h"
+
 #ifndef MODE_DFU
 static char status_info[256] = { 0 };
 #endif
@@ -135,6 +137,8 @@ static void cb_handle_graphical_event(__attribute__((unused)) tile_desc_t tile)
 #endif
     return;
 }
+/* Register this function as a valid callback */
+ADD_GLOB_HANDLER(cb_handle_graphical_event)
 
 #ifdef MODE_DFU
 

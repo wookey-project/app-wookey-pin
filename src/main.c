@@ -91,6 +91,8 @@
 #include "main.h"
 #include "handlers_generic.h"
 
+#include "libc/sanhandlers.h"
+
 static uint8_t id_smart;
 static uint8_t id_crypto;
 
@@ -123,7 +125,6 @@ int _main(uint32_t task_id)
      *******************************************/
 
     printf("Hello ! I'm pin, my id is %x\n", task_id);
-
 #if APP_PIN_INPUT_USART
 
     /* USART mode: eclaring an USART device to interact */
@@ -220,6 +221,8 @@ int _main(uint32_t task_id)
     if (touch_init()) {
         printf("error during Touch initialization!\n");
     }
+    /* Register our callback as a valid one */
+    ADD_LOC_HANDLER(handle_external_events)
     gui_init(240,320, handle_external_events);
 #ifdef MODE_DFU
         rgb_color_t clr;
