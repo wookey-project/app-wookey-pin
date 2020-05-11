@@ -21,7 +21,7 @@
 # include "img/dfu.h"
 # include "img/zz.h"
 
-#if APP_PIN_INPUT_SCREEN
+#ifndef MODE_DFU
 static char status_info[256] = { 0 };
 #endif
 
