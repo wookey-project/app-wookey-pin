@@ -24,7 +24,9 @@
 #include "libc/sanhandlers.h"
 
 #ifndef MODE_DFU
+#if APP_PIN_INPUT_SCREEN
 static char status_info[256] = { 0 };
+#endif
 #endif
 
 menu_desc_t main_menu;

@@ -45,7 +45,7 @@
 # include "libtft.h"
 # include "gui.h"
 
-#elif CONFIG_APP_PIN_DFU_INPUT_MOCKUP
+#elif CONFIG_APP_PIN_FW_INPUT_MOCKUP
   /* nothing to include */
 #else
 # error "please specify input mode"
