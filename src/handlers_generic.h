@@ -9,12 +9,14 @@
 #include "wookey_ipc.h"
 #include "main.h"
 
-#if CONFIG_APP_PIN_INPUT_USART
+#if MODE_DFU
+
+#if CONFIG_APP_PIN_DFU_INPUT_USART
 
 # include "libusart.h"
 # include "libconsole.h"
 
-#elif CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#elif CONFIG_APP_PIN_DFU_INPUT_SCREEN || CONFIG_APP_PIN_DFU_MOCKUP_SHOW_MENU
 
 # include "gui_pin.h"
 # include "libspi.h"
@@ -22,12 +24,35 @@
 # include "libtft.h"
 # include "gui.h"
 
-#elif CONFIG_APP_PIN_INPUT_MOCKUP
+#elif CONFIG_APP_PIN_DFU_INPUT_MOCKUP
   /* nothing to include */
 #else
 # error "please specify input mode"
 #endif
 
+#else
+
+#if CONFIG_APP_PIN_FW_INPUT_USART
+
+# include "libusart.h"
+# include "libconsole.h"
+
+#elif CONFIG_APP_PIN_FW_INPUT_SCREEN || CONFIG_APP_PIN_FW_MOCKUP_SHOW_MENU
+
+# include "gui_pin.h"
+# include "libspi.h"
+# include "libtouch.h"
+# include "libtft.h"
+# include "gui.h"
+
+#elif CONFIG_APP_PIN_DFU_INPUT_MOCKUP
+  /* nothing to include */
+#else
+# error "please specify input mode"
+#endif
+
+
+#endif
 
 enum authentication_mode {
   FULL_AUTHENTICATION_MODE,
@@ -51,7 +76,9 @@ uint8_t handle_authentication(enum authentication_mode authmode);
 
 void handle_external_events(bool *need_gui_refresh);
 
-#if CONFIG_APP_PIN_INPUT_SCREEN || CONFIG_APP_PIN_MOCKUP_SHOW_MENU
+#if (CONFIG_APP_PIN_FW_INPUT_SCREEN && !defined(MODE_DFU)) || (CONFIG_APP_PIN_FW_MOCKUP_SHOW_MENU && !defined(MODE_DFU))
+uint8_t handle_settings_request(t_box signal);
+#elif (CONFIG_APP_PIN_DFU_INPUT_SCREEN && defined(MODE_DFU)) || (CONFIG_APP_PIN_DFU_MOCKUP_SHOW_MENU && defined(MODE_DFU))
 uint8_t handle_settings_request(t_box signal);
 #endif
 

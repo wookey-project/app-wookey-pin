@@ -29,8 +29,9 @@ APP_BUILD_DIR = $(BUILD_DIR)/apps/$(DIR_NAME)
 
 # SDK Cflags
 CFLAGS += $(APPS_CFLAGS)
+CFLAGS += $(EXTRA_CFLAGS)
 # Application CFLAGS...
-CFLAGS += -Isrc/ -MMD -MP
+CFLAGS += -Isrc/ -MMD -MP -Os
 
 ###################################################################
 # About the link step
@@ -39,24 +40,39 @@ CFLAGS += -Isrc/ -MMD -MP
 # linker options to add the layout file
 LDFLAGS += $(EXTRA_LDFLAGS) -L$(APP_BUILD_DIR)
 
-# project's library you whish to use...
-ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+# select libraries depending on current mode INPUT configuration
+ifeq (FW,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_SCREEN))
 LD_LIBS += -lspi -lad7843 -lili9341 -lgui -lstd -lfirmware
 endif
-ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
-LD_LIBS += -lspi -lad7843 -lili9341 -lgui -lstd -lfirmware
-endif
-ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_USART))
 LD_LIBS += -lstd -lconsole -lusart -lfirmware
 endif
-ifeq (y,$(CONFIG_APP_PIN_INPUT_MOCKUP))
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_MOCKUP))
 LD_LIBS += -lstd -lfirmware
+endif
+
+endif
+ifeq (DFU,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_SCREEN))
+LD_LIBS += -lspi -lad7843 -lili9341 -lgui -lstd -lfirmware
+endif
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_USART))
+LD_LIBS += -lstd -lconsole -lusart -lfirmware
+endif
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_MOCKUP))
+LD_LIBS += -lstd -lfirmware
+endif
+
 endif
 
 # Add DRBG if necessary
 ifeq (y,$(CONFIG_STD_DRBG))
 LD_LIBS += -lhmac -lsign
 endif
+
 
 ###################################################################
 # okay let's list our source files and generated files now
@@ -91,15 +107,29 @@ TODEL_DISTCLEAN += $(APP_BUILD_DIR) $(LDSCRIPT_NAME)
 
 ## library dependencies
 LIBDEP := $(BUILD_DIR)/libs/libstd/libstd.a
-ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+
+ifeq (FW,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_SCREEN))
 LIBDEP += $(BUILD_DIR)/libs/libgui/libgui.a
 endif
-ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
-LIBDEP += $(BUILD_DIR)/libs/libgui/libgui.a
-endif
-ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_USART))
 LIBDEP += $(BUILD_DIR)/libs/libconsole/libconsole.a
 endif
+
+endif
+
+ifeq (DFU,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_SCREEN))
+LIBDEP += $(BUILD_DIR)/libs/libgui/libgui.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_USART))
+LIBDEP += $(BUILD_DIR)/libs/libconsole/libconsole.a
+endif
+
+endif
+
 LIBDEP += $(BUILD_DIR)/libs/libfirmware/libfirmware.a
 
 libdep: $(LIBDEP)
@@ -111,14 +141,26 @@ $(LIBDEP):
 # drivers dependencies
 SOCDRVDEP :=
 
-ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+
+ifeq (FW,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_SCREEN))
 SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
 endif
-ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
-SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
-endif
-ifeq (y,$(CONFIG_APP_PIN_INPUT_USART))
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_USART))
 SOCDRVDEP += $(BUILD_DIR)/drivers/libusart/libusart.a
+endif
+
+endif
+ifeq (DFU,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_SCREEN))
+SOCDRVDEP += $(BUILD_DIR)/drivers/libspi/libspi.a
+endif
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_USART))
+SOCDRVDEP += $(BUILD_DIR)/drivers/libusart/libusart.a
+endif
+
 endif
 
 socdrvdep: $(SOCDRVDEP)
@@ -129,13 +171,21 @@ $(SOCDRVDEP):
 # board drivers dependencies
 BRDDRVDEP    :=
 
-ifeq (y,$(CONFIG_APP_PIN_INPUT_SCREEN))
+ifeq (FW,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_FW_INPUT_SCREEN))
 BRDDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
 BRDDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
 endif
-ifeq (y,$(CONFIG_APP_PIN_MOCKUP_SHOW_MENU))
+
+endif
+ifeq (DFU,$(MODE))
+
+ifeq (y,$(CONFIG_APP_PIN_DFU_INPUT_SCREEN))
 BRDDRVDEP += $(BUILD_DIR)/drivers/libad7843/libad7843.a
 BRDDRVDEP += $(BUILD_DIR)/drivers/libili9341/libili9341.a
+endif
+
 endif
 
 brddrvdep: $(BRDDRVDEP)

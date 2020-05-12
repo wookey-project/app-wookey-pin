@@ -21,7 +21,7 @@
 # include "img/dfu.h"
 # include "img/zz.h"
 
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#ifndef MODE_DFU
 static char status_info[256] = { 0 };
 #endif
 
@@ -96,13 +96,13 @@ tile_desc_t idle_6th_tile;
 #define TILE_IDLE_FG     .r = 222, .g = 222, .b = 222
 
 
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
 static void cb_handle_graphical_event(tile_desc_t tile)
 #else
 static void cb_handle_graphical_event(__attribute__((unused)) tile_desc_t tile)
 #endif
 {
-#ifdef CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     if (tile == settings_set_userpin_tile) {
         handle_settings_request(BOX_SET_USERPIN);
         if (handle_authentication(LITE_AUTHENTICATION_MODE)) {
@@ -136,10 +136,11 @@ static void cb_handle_graphical_event(__attribute__((unused)) tile_desc_t tile)
     return;
 }
 
+#ifdef MODE_DFU
 
 void init_dfu_gui(void)
 {
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     tile_action_t   action;
     gui_error_t       ret;
 
@@ -538,10 +539,12 @@ void init_dfu_gui(void)
 #endif
     return;
 }
+#endif
 
+#ifndef MODE_DFU
 void init_fw_gui(void)
 {
-#if CONFIG_APP_PIN_INPUT_SCREEN
+#if APP_PIN_INPUT_SCREEN
     tile_action_t   action;
     gui_error_t       ret;
 
@@ -1201,3 +1204,4 @@ void init_fw_gui(void)
 #endif
     return;
 }
+#endif

@@ -1,14 +1,21 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+#include "autoconf.h"
+#include "libc/types.h"
+
 #define PIN_DEBUG 0
 
-typedef enum {
-    MODE_FW = 0,
-    MODE_DFU = 1
-} t_boot_mode;
+#define APP_PIN_INPUT_SCREEN \
+  ((CONFIG_APP_PIN_DFU_INPUT_SCREEN && MODE_DFU) || (CONFIG_APP_PIN_FW_INPUT_SCREEN && !MODE_DFU))
 
-t_boot_mode get_mode(void);
+
+#define APP_PIN_INPUT_USART \
+  ((CONFIG_APP_PIN_DFU_INPUT_USART && MODE_DFU) || (CONFIG_APP_PIN_FW_INPUT_USART && !MODE_DFU))
+
+#define APP_PIN_INPUT_MOCKUP \
+  ((CONFIG_APP_PIN_DFU_INPUT_MOCKUP && MODE_DFU) || (CONFIG_APP_PIN_FW_INPUT_MOCKUP && !MODE_DFU))
+
 
 uint8_t get_smart_id(void);
 
