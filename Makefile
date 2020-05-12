@@ -53,6 +53,11 @@ ifeq (y,$(CONFIG_APP_PIN_INPUT_MOCKUP))
 LD_LIBS += -lstd -lfirmware
 endif
 
+# Add DRBG if necessary
+ifeq (y,$(CONFIG_STD_DRBG))
+LD_LIBS += -lhmac -lsign
+endif
+
 ###################################################################
 # okay let's list our source files and generated files now
 ###################################################################
