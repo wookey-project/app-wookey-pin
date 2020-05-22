@@ -28,6 +28,14 @@ config APP_PIN_DFU
     Say y if you want to embbed Pin custom application in DFU.
 
 
+config APP_PIN_HEAPSIZE
+  int "Heap section size"
+  depends on APP_PIN
+  default 0
+  ---help---
+    specify the requested heap size in bytes. Only requested if dynamic memory
+    primitives are used (typically malloc())
+
 config APP_PIN_STACKSIZE
   int "Stack size"
   depends on APP_PIN
